@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Noto+Serif:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    /* Custom Scrollbar for Zen Style */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c6c5d4; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #000666; }
+    
+    .paper-texture {
+      background-color: #f9f9f9;
+      background-image: radial-gradient(#e8eaf6 0.5px, transparent 0.5px);
+      background-size: 24px 24px;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary": "#000666",
+            "tertiary-fixed-dim": "#c4c6d2",
+            "surface-dim": "#dadada",
+            "on-tertiary-fixed-variant": "#434750",
+            "on-primary": "#ffffff",
+            "on-tertiary-container": "#9597a2",
+            "surface-container-low": "#f3f3f3",
+            "outline-variant": "#c6c5d4",
+            "inverse-surface": "#2f3131",
+            "primary-fixed": "#e0e0ff",
+            "on-secondary": "#ffffff",
+            "secondary-fixed-dim": "#f2b6cb",
+            "on-primary-container": "#8690ee",
+            "surface-container-lowest": "#ffffff",
+            "inverse-primary": "#bdc2ff",
+            "surface-tint": "#4c56af",
+            "error": "#ba1a1a",
+            "tertiary-fixed": "#e0e2ee",
+            "on-primary-fixed-variant": "#343d96",
+            "surface-container": "#eeeeee",
+            "surface": "#f9f9f9",
+            "on-error": "#ffffff",
+            "on-primary-fixed": "#000767",
+            "primary-container": "#1a237e",
+            "on-secondary-container": "#7b4c5e",
+            "on-error-container": "#93000a",
+            "surface-container-high": "#e8e8e8",
+            "error-container": "#ffdad6",
+            "surface-bright": "#f9f9f9",
+            "on-secondary-fixed-variant": "#65394b",
+            "on-surface-variant": "#454652",
+            "outline": "#767683",
+            "inverse-on-surface": "#f0f1f1",
+            "on-background": "#1a1c1c",
+            "on-tertiary": "#ffffff",
+            "tertiary-container": "#2c3039",
+            "surface-container-highest": "#e2e2e2",
+            "on-surface": "#1a1c1c",
+            "secondary-fixed": "#ffd9e4",
+            "background": "#f9f9f9",
+            "secondary": "#805062",
+            "tertiary": "#181b23",
+            "primary-fixed-dim": "#bdc2ff",
+            "on-tertiary-fixed": "#181b24",
+            "secondary-container": "#fec1d6",
+            "on-secondary-fixed": "#330f1f",
+            "surface-variant": "#e2e2e2"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "lg": "48px",
+            "md": "24px",
+            "base": "8px",
+            "xs": "4px",
+            "margin-mobile": "16px",
+            "xl": "80px",
+            "max-width-content": "1024px",
+            "sm": "12px",
+            "gutter": "24px"
+          },
+          "fontFamily": {
+            "display-lg": ["Manrope"],
+            "body-md": ["Manrope"],
+            "japanese-display": ["Noto Serif"],
+            "headline-lg": ["Manrope"],
+            "label-sm": ["Manrope"],
+            "headline-lg-mobile": ["Manrope"],
+            "japanese-body": ["Noto Serif"]
+          },
+          "fontSize": {
+            "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "japanese-display": ["40px", {"lineHeight": "1.5", "fontWeight": "500"}],
+            "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "headline-lg-mobile": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "japanese-body": ["20px", {"lineHeight": "1.8", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-surface font-body-md text-on-surface">
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen w-72 fixed left-0 top-0 border-r border-outline-variant bg-surface shadow-[0_4px_20px_-2px_rgba(26,35,126,0.05)] py-lg px-md gap-lg z-50">
+<div class="flex flex-col gap-xs mb-md">
+<h1 class="font-japanese-display text-japanese-display text-primary">ZenStudy</h1>
+<p class="text-on-surface-variant text-sm px-xs">Study Streak: 12 Days</p>
+</div>
+<nav class="flex flex-col gap-xs grow">
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed/10 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed/10 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span>My Vocabulary</span>
+</a>
+<a class="flex items-center gap-base px-md py-sm bg-primary-fixed text-on-primary-fixed rounded-xl font-bold transition-all duration-300" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span>Dialogue Trainer</span>
+</a>
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed/10 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">style</span>
+<span>Flashcards</span>
+</a>
+</nav>
+<button class="flex items-center justify-center gap-sm bg-primary text-on-primary py-sm rounded-xl font-bold active:scale-95 transition-transform mb-lg">
+<span class="material-symbols-outlined">add_circle</span>
+<span>Quick Add Word</span>
+</button>
+<div class="flex flex-col gap-xs pt-md border-t border-outline-variant">
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed/10 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed/10 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span>Help</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="lg:pl-72 min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 h-16 w-full flex justify-between items-center px-margin-mobile md:px-gutter bg-surface/80 backdrop-blur-md border-b border-outline-variant">
+<div class="flex items-center gap-md">
+<span class="lg:hidden material-symbols-outlined text-primary">menu</span>
+<div class="flex items-center gap-sm bg-surface-container rounded-full px-md py-1.5 border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant text-base">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-40 md:w-64" placeholder="Search lessons..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center gap-base mr-md">
+<span class="material-symbols-outlined text-orange-500" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-bold text-primary">12</span>
+</div>
+<button class="hidden md:flex items-center px-md py-2 bg-primary text-on-primary rounded-full font-bold text-sm active:opacity-80 transition-opacity">
+          Start Session
+        </button>
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A professional and clean studio headshot of a young adult with a friendly expression. The background is a soft, out-of-focus neutral grey, emphasizing a minimalist and focused atmosphere. The lighting is high-key and soft, fitting the modern light-mode UI aesthetic with clean lines and a premium, high-quality photographic feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2-_UDcPmavoN0KjBCWggyRIlh90NtUHchNIgsapCCqsF52q1dntdog0g3ukJ9id3w-5Pf0gXxnz9I9moIvnrTxZcC9QLOBa2oCqADSWUJpc3-Vza3BKAFPiSlfJucwf6QddTLUrdhIYmoGTDNjJ84DdvRVUsgdXbRibYMah2l-Im6UWNcZSYEOf8lZClkR4-rfbPbysIM9UBspBGGvcgLWHyAEtWgA1gBEffzCtf9TWPqRG6dgNlGSHP3-QNJMWFcl93C1B3lUbw"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="max-w-max-width-content mx-auto px-margin-mobile md:px-gutter py-md">
+<!-- Scenario Hero Section -->
+<section class="mb-lg flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<div class="flex items-center gap-sm mb-xs">
+<span class="bg-secondary-container text-on-secondary-fixed text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Level A2</span>
+<span class="text-on-surface-variant text-sm font-semibold">Practical Japanese</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-primary mb-xs">At the Ramen Shop</h2>
+<p class="text-on-surface-variant max-w-xl">Master the art of ordering your favorite bowl while navigating polite customer-staff interactions in a busy Tokyo eatery.</p>
+</div>
+<div class="flex items-center bg-surface-container-low p-base rounded-2xl gap-md border border-outline-variant/20 shadow-sm">
+<div class="flex flex-col items-center">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Translation</span>
+<button class="relative inline-flex h-6 w-11 items-center rounded-full bg-primary-container">
+<span class="inline-block h-4 w-4 translate-x-6 transform rounded-full bg-on-primary transition duration-200 ease-in-out"></span>
+</button>
+</div>
+<div class="h-8 w-px bg-outline-variant/50"></div>
+<button class="flex flex-col items-center group">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 group-hover:text-primary transition-colors">Listen All</span>
+<span class="material-symbols-outlined text-primary">play_circle</span>
+</button>
+</div>
+</section>
+<!-- Main Dialogue Trainer Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-lg items-start">
+<!-- Conversation Section (Asymmetric / Bento Feel) -->
+<div class="xl:col-span-8 space-y-md">
+<!-- Character Header (Ambient Shadow & Tonal Layering) -->
+<div class="flex justify-between items-center px-md">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full border-2 border-primary-fixed-dim p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A portrait of a Japanese woman wearing a professional server uniform, looking warm and welcoming. She is in a blurred background of a modern, clean ramen shop with wooden textures and warm ambient lighting. The style is soft-focus and minimalist, maintaining a serene and focused educational mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3RMkSr-MK-LmWDAzIsyIhxSMlhxuDGMXzC_oFVCct5XV3yvQqthuHQgAY5YapK1sTOU5h-zWJDRx3EGVrxVxyOQW2vpRsZ4hWhJf7zCTVPIcjfEOIaXZ6MJ2CAAq_fttJAkjGreGkIS76rIDnw-HNLd7aK8bNepV_nz30PZjxzhKfMKldg17dDLDN-myArxXAJMw_VPlfny4XdMD-X6-gr9OUwcvn6euqWqesYX80KZw7ugC0KzNn1n2sZXR_V3Q2GhzSCHD2nyw"/>
+</div>
+<div>
+<span class="text-xs font-bold text-primary">STAFF</span>
+<p class="text-sm text-on-surface-variant">Yuki</p>
+</div>
+</div>
+<div class="flex items-center gap-sm text-right">
+<div>
+<span class="text-xs font-bold text-secondary">LEARNER</span>
+<p class="text-sm text-on-surface-variant">You</p>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-secondary-fixed p-0.5">
+<div class="w-full h-full rounded-full bg-secondary-fixed-dim flex items-center justify-center text-on-secondary-fixed font-bold">JD</div>
+</div>
+</div>
+</div>
+<!-- Dialogue Thread -->
+<div class="paper-texture rounded-3xl p-md md:p-lg space-y-lg border border-outline-variant/30 shadow-[0_4px_20px_-2px_rgba(26,35,126,0.05)]">
+<!-- Message Left -->
+<div class="flex flex-col items-start gap-sm max-w-[85%]">
+<div class="bg-white p-md rounded-2xl rounded-tl-none shadow-sm border border-outline-variant/20 relative group cursor-pointer hover:border-primary transition-colors">
+<p class="font-japanese-body text-japanese-body text-primary leading-relaxed">いらっしゃいませ！何名様ですか？</p>
+<div class="mt-2 text-sm text-on-surface-variant/70 italic">Irasshaimase! Nan-mei-sama desu ka?</div>
+<div class="absolute -right-10 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary">volume_up</span>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant ml-2 font-bold uppercase">Welcome! How many people?</span>
+</div>
+<!-- Message Right -->
+<div class="flex flex-col items-end gap-sm ml-auto max-w-[85%]">
+<div class="bg-primary text-on-primary p-md rounded-2xl rounded-tr-none shadow-sm relative group cursor-pointer active:scale-95 transition-transform">
+<p class="font-japanese-body text-japanese-body leading-relaxed text-white">一人です。カウンター席でもいいですか？</p>
+<div class="mt-2 text-sm text-on-primary/70 italic">Hitori desu. Kauntaa-seki demo ii desu ka?</div>
+<div class="absolute -left-10 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-white hover:text-primary-fixed">volume_up</span>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant mr-2 font-bold uppercase">One person. Is a counter seat okay?</span>
+</div>
+<!-- Message Left -->
+<div class="flex flex-col items-start gap-sm max-w-[85%]">
+<div class="bg-white p-md rounded-2xl rounded-tl-none shadow-sm border border-outline-variant/20 relative group cursor-pointer hover:border-primary transition-colors">
+<p class="font-japanese-body text-japanese-body text-primary leading-relaxed">はい、もちろんです。こちらへどうぞ。</p>
+<div class="mt-2 text-sm text-on-surface-variant/70 italic">Hai, mochiron desu. Kochira e douzo.</div>
+<div class="absolute -right-10 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary">volume_up</span>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant ml-2 font-bold uppercase">Yes, of course. This way, please.</span>
+</div>
+<!-- Interaction Point -->
+<div class="pt-md border-t border-outline-variant/30">
+<div class="flex flex-col items-center gap-md py-md bg-secondary-fixed/20 rounded-2xl border-2 border-dashed border-secondary-fixed-dim">
+<p class="text-secondary font-bold text-sm">YOUR TURN: ASK FOR THE MENU</p>
+<div class="flex gap-sm">
+<button class="bg-white border-2 border-primary text-primary px-lg py-sm rounded-xl font-bold hover:bg-primary hover:text-on-primary transition-all">
+                    メニューをください
+                  </button>
+<button class="bg-white border border-outline text-on-surface-variant px-md py-sm rounded-xl text-sm font-medium hover:border-primary hover:text-primary transition-all">
+                    Hint
+                  </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Section (Key Phrases & Insights) -->
+<div class="xl:col-span-4 space-y-md">
+<!-- Key Phrases Card -->
+<div class="bg-white rounded-3xl p-md border border-outline-variant/40 shadow-sm">
+<div class="flex items-center gap-base mb-md">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="font-bold text-primary">Key Phrases</h3>
+</div>
+<div class="space-y-sm">
+<div class="p-sm bg-surface rounded-xl hover:shadow-md transition-shadow cursor-help border border-transparent hover:border-secondary-fixed-dim">
+<div class="flex justify-between items-start">
+<span class="font-japanese-body text-lg text-primary">一人です</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">info</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1">Hitori desu • Just one person</p>
+<div class="mt-2 h-1 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="bg-secondary-fixed-dim h-full w-2/3"></div>
+</div>
+</div>
+<div class="p-sm bg-surface rounded-xl hover:shadow-md transition-shadow cursor-help border border-transparent hover:border-secondary-fixed-dim">
+<div class="flex justify-between items-start">
+<span class="font-japanese-body text-lg text-primary">〜でもいいですか？</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">info</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1">...demo ii desu ka? • Is it okay if...?</p>
+</div>
+<div class="p-sm bg-surface rounded-xl hover:shadow-md transition-shadow cursor-help border border-transparent hover:border-secondary-fixed-dim">
+<div class="flex justify-between items-start">
+<span class="font-japanese-body text-lg text-primary">こちらへどうぞ</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">info</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1">Kochira e douzo • This way, please</p>
+</div>
+</div>
+</div>
+<!-- Quick Tip Bento Box -->
+<div class="bg-primary-container text-on-primary-fixed rounded-3xl p-md overflow-hidden relative group">
+<div class="relative z-10">
+<div class="bg-on-primary-container text-primary-container w-fit px-2 py-0.5 rounded-md text-[10px] font-bold mb-2">PRO TIP</div>
+<h4 class="font-bold mb-2">Counting People</h4>
+<p class="text-xs text-on-primary-container leading-relaxed">
+                In restaurants, use "hitori" (1), "futari" (2), and then number + "nin" (e.g., san-nin for 3). Polite servers will refer to you as "...sama".
+              </p>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-on-primary-container/10 rotate-12 group-hover:rotate-0 transition-transform duration-500">diversity_3</span>
+</div>
+<!-- Progress Tracking -->
+<div class="bg-white rounded-3xl p-md border border-outline-variant/40 shadow-sm">
+<h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-md">Scenario Progress</h4>
+<div class="flex items-center gap-md">
+<div class="relative flex items-center justify-center">
+<svg class="w-16 h-16 transform -rotate-90">
+<circle class="text-surface-container-high" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-secondary" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175.9" stroke-dashoffset="105.5" stroke-width="4"></circle>
+</svg>
+<span class="absolute text-xs font-bold text-primary">40%</span>
+</div>
+<div>
+<p class="font-bold text-primary">Dialogue Flow</p>
+<p class="text-xs text-on-surface-variant">2 of 5 interactions complete</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t-0 shadow-[0_-4px_20px_-2px_rgba(26,35,126,0.05)] flex justify-around items-center h-16 z-50">
+<a class="flex flex-col items-center text-on-surface-variant gap-xs" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant gap-xs" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-medium">Vocab</span>
+</a>
+<a class="flex flex-col items-center text-primary gap-xs" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">forum</span>
+<span class="text-[10px] font-bold">Trainer</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant gap-xs" href="#">
+<span class="material-symbols-outlined">style</span>
+<span class="text-[10px] font-medium">Cards</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZenStudy - Meaning Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Noto+Serif:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#000666",
+                      "tertiary-fixed-dim": "#c4c6d2",
+                      "surface-dim": "#dadada",
+                      "on-tertiary-fixed-variant": "#434750",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#9597a2",
+                      "surface-container-low": "#f3f3f3",
+                      "outline-variant": "#c6c5d4",
+                      "inverse-surface": "#2f3131",
+                      "primary-fixed": "#e0e0ff",
+                      "on-secondary": "#ffffff",
+                      "secondary-fixed-dim": "#f2b6cb",
+                      "on-primary-container": "#8690ee",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-primary": "#bdc2ff",
+                      "surface-tint": "#4c56af",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed": "#e0e2ee",
+                      "on-primary-fixed-variant": "#343d96",
+                      "surface-container": "#eeeeee",
+                      "surface": "#f9f9f9",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed": "#000767",
+                      "primary-container": "#1a237e",
+                      "on-secondary-container": "#7b4c5e",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#e8e8e8",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#f9f9f9",
+                      "on-secondary-fixed-variant": "#65394b",
+                      "on-surface-variant": "#454652",
+                      "outline": "#767683",
+                      "inverse-on-surface": "#f0f1f1",
+                      "on-background": "#1a1c1c",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-container": "#2c3039",
+                      "surface-container-highest": "#e2e2e2",
+                      "on-surface": "#1a1c1c",
+                      "secondary-fixed": "#ffd9e4",
+                      "background": "#f9f9f9",
+                      "secondary": "#805062",
+                      "tertiary": "#181b23",
+                      "primary-fixed-dim": "#bdc2ff",
+                      "on-tertiary-fixed": "#181b24",
+                      "secondary-container": "#fec1d6",
+                      "on-secondary-fixed": "#330f1f",
+                      "surface-variant": "#e2e2e2"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "lg": "48px",
+                      "md": "24px",
+                      "base": "8px",
+                      "xs": "4px",
+                      "margin-mobile": "16px",
+                      "xl": "80px",
+                      "max-width-content": "1024px",
+                      "sm": "12px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": ["Manrope"],
+                      "body-md": ["Manrope"],
+                      "japanese-display": ["Noto Serif"],
+                      "headline-lg": ["Manrope"],
+                      "label-sm": ["Manrope"],
+                      "headline-lg-mobile": ["Manrope"],
+                      "japanese-body": ["Noto Serif"]
+              },
+              "fontSize": {
+                      "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "japanese-display": ["40px", {"lineHeight": "1.5", "fontWeight": "500"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "japanese-body": ["20px", {"lineHeight": "1.8", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .paper-texture {
+            background-color: #f9f9f9;
+            background-image: radial-gradient(#d1d1d1 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+        .zen-shadow {
+            box-shadow: 0 4px 24px -2px rgba(26, 35, 126, 0.05);
+        }
+        .active-press:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface selection:bg-secondary-container">
+<!-- Sidebar Navigation (Shared Component) -->
+<aside class="hidden lg:flex flex-col h-screen w-72 fixed left-0 top-0 py-lg px-md gap-lg bg-surface border-r border-outline-variant shadow-sm z-50">
+<div class="flex items-center gap-base px-sm">
+<span class="font-japanese-display text-japanese-display text-primary">ZenStudy</span>
+</div>
+<div class="flex flex-col gap-xs mt-md">
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-primary-fixed/10 rounded-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-primary-fixed/10 rounded-xl" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span>My Vocabulary</span>
+</a>
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-primary-fixed/10 rounded-xl" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span>Dialogue Trainer</span>
+</a>
+<a class="flex items-center gap-base px-md py-sm bg-primary-fixed text-on-primary-fixed rounded-xl font-bold transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">style</span>
+<span>Flashcards</span>
+</a>
+</div>
+<div class="mt-auto flex flex-col gap-xs pt-lg border-t border-outline-variant">
+<div class="px-md mb-sm">
+<p class="text-label-sm font-label-sm text-outline">Study Streak: 12 Days</p>
+</div>
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-primary-fixed/10 rounded-xl" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-base px-md py-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-primary-fixed/10 rounded-xl" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span>Help</span>
+</a>
+</div>
+</aside>
+<!-- Top App Bar (Shared Component) -->
+<header class="flex justify-between items-center w-full px-margin-mobile md:px-gutter h-16 lg:pl-[288px] bg-surface/80 backdrop-blur-md sticky top-0 z-40">
+<div class="flex items-center gap-md">
+<button class="lg:hidden p-2 text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Flashcards</h1>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center bg-surface-container rounded-full px-md py-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px] mr-2">local_fire_department</span>
+<span class="text-label-sm">12 DAY STREAK</span>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">notifications</span>
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="User avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeov_iYoHUVcNGWx0nZCueSrL9K1K8W3NgOvc3p07QbTh8knTbUUPJgH_kBxA9kiz6Mr6m0onHihEW7AEzUTU81Dk_oT8mN7y5gyQwYHD4JckCik35LsY-eND5Ao8Ecaz3qO0FGskJ_VNUIaCp9VA9fU4nzSvROeNIedc-_Si1-sk920Bzoapl6_X9ufu7kilES9cePzjKH9pF80zR5O47_6rd87SjZuayAr2wov2rT-6N3oiLcdjRZ5vqEWYy8vrZ2AXbNYhIQ24"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Study Canvas -->
+<main class="lg:ml-72 min-h-[calc(100vh-64px)] paper-texture flex flex-col items-center py-lg px-margin-mobile">
+<!-- Progress Indicator -->
+<div class="w-full max-w-max-width-content mb-xl">
+<div class="flex justify-between items-end mb-base">
+<div>
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-widest">Session Progress</span>
+<h2 class="font-headline-lg text-headline-lg-mobile text-on-surface">Meaning Mode</h2>
+</div>
+<div class="text-right">
+<span class="text-headline-lg-mobile text-primary font-bold">14</span>
+<span class="text-on-surface-variant">/ 20</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[70%] rounded-full"></div>
+</div>
+</div>
+<!-- Flashcard Container -->
+<div class="w-full max-w-[640px] flex flex-col gap-md perspective-1000">
+<!-- The Card -->
+<div class="bg-surface-container-lowest rounded-xl p-xl zen-shadow border border-outline-variant/30 flex flex-col items-center text-center transition-all duration-500">
+<div class="mb-lg">
+<span class="px-md py-1 bg-secondary-fixed text-on-secondary-fixed text-label-sm font-label-sm rounded-full">VOCABULARY</span>
+</div>
+<!-- Reading (Hidden or Small) -->
+<p class="text-on-surface-variant font-japanese-body text-body-md mb-xs">木漏れ日</p>
+<!-- Main Word -->
+<h3 class="font-japanese-display text-[80px] leading-tight text-primary mb-xl">こもれび</h3>
+<!-- Hint Toggle -->
+<div class="w-full border-t border-outline-variant/20 pt-lg mt-base">
+<button class="group flex items-center justify-center gap-base mx-auto text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">lightbulb</span>
+<span class="text-label-sm font-label-sm uppercase tracking-wider">Show Personal Hint</span>
+<span class="material-symbols-outlined group-hover:translate-y-0.5 transition-transform">expand_more</span>
+</button>
+<!-- Hidden Hint State (Mockup) -->
+<div class="hidden mt-md p-md bg-tertiary-fixed/30 rounded-lg italic text-on-tertiary-fixed-variant border border-tertiary-fixed">
+                        "Think of sunlight filtering through the trees in a quiet forest..."
+                    </div>
+</div>
+</div>
+<!-- Action Area (Pre-Reveal) -->
+<div class="flex flex-col items-center gap-md mt-md">
+<button class="w-full max-w-[320px] bg-primary text-on-primary py-md px-xl rounded-xl font-bold zen-shadow active-press transition-all flex items-center justify-center gap-md">
+<span>Reveal Meaning</span>
+<span class="material-symbols-outlined">visibility</span>
+</button>
+<p class="text-label-sm text-outline">Press [SPACE] to reveal</p>
+</div>
+<!-- Reveal State / Feedback Buttons (Example Hidden Layout) -->
+<div class="hidden flex flex-col items-center gap-lg mt-md w-full">
+<div class="text-center animate-fade-in">
+<h4 class="text-display-lg font-display-lg text-on-surface mb-xs">Komorebi</h4>
+<p class="text-body-md text-on-surface-variant max-w-sm mx-auto">The sunlight that filters through the leaves of trees.</p>
+</div>
+<div class="grid grid-cols-3 gap-md w-full">
+<button class="flex flex-col items-center gap-base p-md bg-surface border border-outline-variant rounded-xl hover:bg-error-container/20 hover:border-error transition-all active-press">
+<span class="text-label-sm font-bold text-error uppercase tracking-widest">Hard</span>
+<span class="text-xs text-outline">1m</span>
+</button>
+<button class="flex flex-col items-center gap-base p-md bg-surface border border-primary/20 rounded-xl hover:bg-primary-fixed hover:border-primary transition-all active-press">
+<span class="text-label-sm font-bold text-primary uppercase tracking-widest">Good</span>
+<span class="text-xs text-outline">1d</span>
+</button>
+<button class="flex flex-col items-center gap-base p-md bg-surface border border-outline-variant rounded-xl hover:bg-secondary-container/20 hover:border-secondary transition-all active-press">
+<span class="text-label-sm font-bold text-secondary uppercase tracking-widest">Easy</span>
+<span class="text-xs text-outline">4d</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Secondary Content Section: Bento Details -->
+<div class="w-full max-w-max-width-content grid grid-cols-1 md:grid-cols-3 gap-md mt-xl opacity-60 hover:opacity-100 transition-opacity duration-500">
+<!-- Example Usage -->
+<div class="md:col-span-2 bg-white/50 backdrop-blur-sm rounded-xl p-md border border-outline-variant/30">
+<h5 class="text-label-sm font-label-sm text-outline uppercase mb-md">Contextual Usage</h5>
+<p class="font-japanese-body text-japanese-body text-on-surface mb-sm">
+                    森を歩いていると、美しい<span class="text-primary font-bold">木漏れ日</span>が地面を照らしていた。
+                </p>
+<p class="text-body-md text-on-surface-variant italic">
+                    "As I walked through the forest, beautiful sunlight filtering through the trees illuminated the ground."
+                </p>
+</div>
+<!-- Word Stats -->
+<div class="bg-white/50 backdrop-blur-sm rounded-xl p-md border border-outline-variant/30 flex flex-col justify-between">
+<div>
+<h5 class="text-label-sm font-label-sm text-outline uppercase mb-md">Word Mastery</h5>
+<div class="flex items-center gap-sm">
+<div class="flex -space-x-1">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div class="w-2 h-2 rounded-full bg-surface-container"></div>
+<div class="w-2 h-2 rounded-full bg-surface-container"></div>
+</div>
+<span class="text-label-sm text-on-surface">Level 2: Apprentice</span>
+</div>
+</div>
+<div class="mt-md pt-md border-t border-outline-variant/10">
+<p class="text-xs text-outline">Next review in 24 hours</p>
+</div>
+</div>
+</div>
+<!-- Floating Decorative Element (Modern Zen) -->
+<div class="fixed bottom-lg right-lg hidden xl:block pointer-events-none">
+<div class="relative w-48 h-48 opacity-10">
+<img alt="Abstract zen pattern" class="w-full h-full grayscale" data-alt="A subtle, minimalist digital art piece featuring soft, generative organic shapes in grayscale. The composition is airy with vast negative space, evoking a sense of calm and focus. The lighting is diffused and even, mirroring a high-end light-mode user interface. The aesthetic is clean, modern, and rooted in Japanese minimalist design principles." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQlrCs67uJu7r02ukMaUOzFrRbzdn-oc9rzRwyPIVlAbCmqgGQ5oAkLJ5oX-Gzg0S1pjLsT9RkTYs9K5caGtW41bdht3bA3Vd8_-cnqA4ZuNk5y6kUmqGgpLJF3OMRjmVxsGIZHz-0kTWrYKXOpjEuvewmYf5yEBKkZu9WU_dO1WMIRainC-RpzA3EgCsxyFRCOhgXbyx0yFGNIsPsCD6JOitXdrMA7Z5NeqjTB3Xce4cSP0_K5nA15Zgeb6S2qOwXc5tRHrIs5tw"/>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation (Mobile Only) -->
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface/90 backdrop-blur-md border-t border-outline-variant flex items-center justify-around px-md z-50">
+<a class="flex flex-col items-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">style</span>
+<span class="text-[10px] font-label-sm font-bold">Study</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-label-sm">Vocab</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-label-sm">Profile</span>
+</a>
+</nav>
+</body></html>
