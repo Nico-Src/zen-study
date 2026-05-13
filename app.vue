@@ -1222,7 +1222,7 @@ onMounted(async () => {
             <ContextMenu ref="vocabularyContextMenu" :model="vocabularyContextMenuItems" />
             <DataTable
               v-model:context-menu-selection="selectedVocabularyRow"
-              :value="vocabulary"
+              :value="filteredVocabulary"
               data-key="id"
               striped-rows
               context-menu
