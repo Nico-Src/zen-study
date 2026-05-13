@@ -73,11 +73,22 @@ const flashSessionStarted = ref(false)
 const flashSessionSize = ref(10)
 const flashSessionCards = ref<VocabularyEntry[]>([])
 const flashSessionId = ref('')
+const selectedFlashTags = ref<string[]>([])
+const manualVocabularySelection = ref(false)
+const selectedFlashVocabularyIds = ref<number[]>([])
+const flashTagDialogVisible = ref(false)
+const flashVocabularyDialogVisible = ref(false)
 const flashAnswer = ref('')
 const flashFeedback = ref<'correct' | 'incorrect' | ''>('')
 const flashCorrectCount = ref(0)
 const flashSessionComplete = ref(false)
 const characterIndex = ref(0)
+const characterCanvas = ref<HTMLCanvasElement | null>(null)
+const characterHintVisible = ref(true)
+const characterDrawing = ref(false)
+const characterDrawScore = ref<number | null>(null)
+const characterDrawFeedback = ref<'correct' | 'incorrect' | ''>('')
+const characterHasDrawing = ref(false)
 const dialogueIndex = ref(0)
 const dialogueStep = ref(0)
 const selectedDialogueAnswer = ref('')
@@ -100,6 +111,15 @@ const filteredVocabulary = computed(() => {
 })
 
 const dueVocabulary = computed(() => [...filteredVocabulary.value].sort((left, right) => (left.due || 0) - (right.due || 0)))
+// Flashcard setup filters tags first, then optionally narrows that pool to hand-picked words.
+const vocabularyTags = computed(() => Array.from(new Set(vocabulary.value.flatMap(item => item.tags || []))).sort((left, right) => left.localeCompare(right)))
+const flashTagFilteredVocabulary = computed(() => {
+  if (!selectedFlashTags.value.length) return dueVocabulary.value
+  return dueVocabulary.value.filter(item => item.tags?.some(tag => selectedFlashTags.value.includes(tag)))
+})
+const selectedFlashVocabulary = computed(() => flashTagFilteredVocabulary.value.filter(item => item.id && selectedFlashVocabularyIds.value.includes(item.id)))
+// Before manual selection, the selected tag pool is intentionally treated as fully selected.
+const flashPracticeVocabulary = computed(() => manualVocabularySelection.value ? selectedFlashVocabulary.value : flashTagFilteredVocabulary.value)
 const dueCharacters = computed(() => [...characters.value].sort((left, right) => (left.due || 0) - (right.due || 0)))
 const activeFlashcard = computed(() => flashSessionCards.value[flashIndex.value])
 const activeCharacter = computed(() => dueCharacters.value[characterIndex.value % Math.max(dueCharacters.value.length, 1)])
@@ -187,9 +207,22 @@ const vocabularyContextMenuItems = computed(() => [
   }
 ])
 
-watch(dueVocabulary, (cards) => {
+watch(flashPracticeVocabulary, (cards) => {
   const maxCards = Math.max(cards.length, 1)
   flashSessionSize.value = Math.max(1, Math.min(Number(flashSessionSize.value || 1), maxCards))
+})
+
+watch(flashTagFilteredVocabulary, (cards) => {
+  const availableIds = new Set(cards.map(item => item.id).filter((id): id is number => typeof id === 'number'))
+  selectedFlashVocabularyIds.value = selectedFlashVocabularyIds.value.filter(id => availableIds.has(id))
+})
+
+watch(activeCharacter, async () => {
+  characterDrawFeedback.value = ''
+  characterDrawScore.value = null
+  characterHasDrawing.value = false
+  await nextTick()
+  clearCharacterCanvas()
 })
 
 async function refreshData() {
@@ -255,9 +288,53 @@ function meaningAnswers(card: VocabularyEntry) {
     .filter(Boolean)
 }
 
+function toggleFlashTag(tag: string) {
+  selectedFlashTags.value = selectedFlashTags.value.includes(tag)
+    ? selectedFlashTags.value.filter(item => item !== tag)
+    : [...selectedFlashTags.value, tag]
+  manualVocabularySelection.value = false
+  selectedFlashVocabularyIds.value = []
+}
+
+function selectAllFlashTags() {
+  selectedFlashTags.value = [...vocabularyTags.value]
+  manualVocabularySelection.value = false
+  selectedFlashVocabularyIds.value = []
+}
+
+function deselectAllFlashTags() {
+  selectedFlashTags.value = []
+  manualVocabularySelection.value = false
+  selectedFlashVocabularyIds.value = []
+}
+
+// Manual vocab selection intentionally starts empty after the user chooses to curate the tag pool.
+function beginVocabularySelection() {
+  if (!manualVocabularySelection.value) selectedFlashVocabularyIds.value = []
+  manualVocabularySelection.value = true
+  flashVocabularyDialogVisible.value = true
+}
+
+function toggleFlashVocabulary(entry: VocabularyEntry) {
+  if (!entry.id) return
+  selectedFlashVocabularyIds.value = selectedFlashVocabularyIds.value.includes(entry.id)
+    ? selectedFlashVocabularyIds.value.filter(id => id !== entry.id)
+    : [...selectedFlashVocabularyIds.value, entry.id]
+}
+
+function selectAllFlashVocabulary() {
+  selectedFlashVocabularyIds.value = flashTagFilteredVocabulary.value
+    .map(item => item.id)
+    .filter((id): id is number => typeof id === 'number')
+}
+
+function deselectAllFlashVocabulary() {
+  selectedFlashVocabularyIds.value = []
+}
+
 function startFlashSession() {
-  const size = Math.max(1, Math.min(Number(flashSessionSize.value || 1), dueVocabulary.value.length))
-  flashSessionCards.value = dueVocabulary.value.slice(0, size)
+  const size = Math.max(1, Math.min(Number(flashSessionSize.value || 1), flashPracticeVocabulary.value.length))
+  flashSessionCards.value = flashPracticeVocabulary.value.slice(0, size)
   flashSessionId.value = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`
   flashIndex.value = 0
   flashAnswer.value = ''
@@ -493,6 +570,131 @@ async function updateStudyStats() {
   nextSettings.reviewedToday += 1
   nextSettings.lastStudyDate = today
   await database.put('settings', nextSettings)
+}
+
+function characterContext() {
+  const canvas = characterCanvas.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) return null
+  return { canvas, context }
+}
+
+function characterPointerPosition(event: PointerEvent) {
+  const canvas = characterCanvas.value
+  if (!canvas) return null
+  const bounds = canvas.getBoundingClientRect()
+  return {
+    x: ((event.clientX - bounds.left) / bounds.width) * canvas.width,
+    y: ((event.clientY - bounds.top) / bounds.height) * canvas.height
+  }
+}
+
+function clearCharacterCanvas() {
+  const drawing = characterContext()
+  if (!drawing) return
+  drawing.context.clearRect(0, 0, drawing.canvas.width, drawing.canvas.height)
+  characterDrawScore.value = null
+  characterDrawFeedback.value = ''
+  characterHasDrawing.value = false
+}
+
+function startCharacterStroke(event: PointerEvent) {
+  const drawing = characterContext()
+  const point = characterPointerPosition(event)
+  if (!drawing || !point || characterDrawFeedback.value === 'correct') return
+  event.preventDefault()
+  drawing.canvas.setPointerCapture(event.pointerId)
+  drawing.context.lineCap = 'round'
+  drawing.context.lineJoin = 'round'
+  drawing.context.lineWidth = 30
+  drawing.context.strokeStyle = '#000666'
+  drawing.context.beginPath()
+  drawing.context.moveTo(point.x, point.y)
+  characterDrawing.value = true
+  characterHasDrawing.value = true
+  characterDrawFeedback.value = ''
+}
+
+function drawCharacterStroke(event: PointerEvent) {
+  if (!characterDrawing.value) return
+  const drawing = characterContext()
+  const point = characterPointerPosition(event)
+  if (!drawing || !point) return
+  event.preventDefault()
+  drawing.context.lineTo(point.x, point.y)
+  drawing.context.stroke()
+}
+
+function finishCharacterStroke(event: PointerEvent) {
+  if (!characterDrawing.value) return
+  characterDrawing.value = false
+  characterCanvas.value?.releasePointerCapture(event.pointerId)
+}
+
+function referenceCharacterMask(character: string, size: number) {
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const context = canvas.getContext('2d')
+  if (!context) return null
+  context.fillStyle = '#000'
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.font = `420px "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif`
+  context.fillText(character, size / 2, size / 2 + 8)
+  return context.getImageData(0, 0, size, size).data
+}
+
+function hasNearbyPixel(data: Uint8ClampedArray, width: number, x: number, y: number, radius: number, step: number) {
+  for (let offsetY = -radius; offsetY <= radius; offsetY += step) {
+    for (let offsetX = -radius; offsetX <= radius; offsetX += step) {
+      if ((offsetX * offsetX) + (offsetY * offsetY) > radius * radius) continue
+      const nextX = x + offsetX
+      const nextY = y + offsetY
+      if (nextX < 0 || nextY < 0 || nextX >= width || nextY >= width) continue
+      if (data[((nextY * width + nextX) * 4) + 3] > 24) return true
+    }
+  }
+  return false
+}
+
+function compareCharacterDrawing() {
+  const drawing = characterContext()
+  const character = activeCharacter.value
+  if (!drawing || !character || !characterHasDrawing.value || !import.meta.client) return
+
+  const size = drawing.canvas.width
+  const drawnData = drawing.context.getImageData(0, 0, size, size).data
+  const targetData = referenceCharacterMask(character.char, size)
+  if (!targetData) return
+
+  let targetPixels = 0
+  let matchedTargetPixels = 0
+  let drawnPixels = 0
+  let matchedDrawnPixels = 0
+  const sampleStep = 4
+  const targetTolerance = 22
+  const drawnTolerance = 28
+
+  for (let y = 0; y < size; y += sampleStep) {
+    for (let x = 0; x < size; x += sampleStep) {
+      const alphaIndex = ((y * size + x) * 4) + 3
+      if (targetData[alphaIndex] > 24) {
+        targetPixels += 1
+        if (hasNearbyPixel(drawnData, size, x, y, targetTolerance, sampleStep)) matchedTargetPixels += 1
+      }
+      if (drawnData[alphaIndex] > 24) {
+        drawnPixels += 1
+        if (hasNearbyPixel(targetData, size, x, y, drawnTolerance, sampleStep)) matchedDrawnPixels += 1
+      }
+    }
+  }
+
+  const coverage = targetPixels ? matchedTargetPixels / targetPixels : 0
+  const precision = drawnPixels ? matchedDrawnPixels / drawnPixels : 0
+  const score = Math.round(((coverage * 0.62) + (precision * 0.38)) * 100)
+  characterDrawScore.value = score
+  characterDrawFeedback.value = score >= 85 ? 'correct' : 'incorrect'
 }
 
 async function rateVocabulary(rating: Rating) {
@@ -776,12 +978,33 @@ onMounted(async () => {
             <article class="panel session-setup-panel">
               <p class="eyebrow">{{ t('newSession') }}</p>
               <h2>{{ t('howManyCards') }}</h2>
-              <p>{{ t('cardsAvailable', { count: dueVocabulary.length }) }}</p>
-              <FloatLabel>
-                <InputNumber id="sessionSize" v-model="flashSessionSize" :min="1" :max="Math.max(dueVocabulary.length, 1)" show-buttons />
+              <p>{{ t('cardsAvailable', { count: flashPracticeVocabulary.length }) }}</p>
+              <div v-if="vocabularyTags.length" class="flash-filter-stack">
+                <div class="filter-head">
+                  <b>{{ t('practiceFilters') }}</b>
+                  <span>{{ selectedFlashTags.length ? t('tagPoolCount', { count: flashTagFilteredVocabulary.length }) : t('allTagsSelected') }}</span>
+                </div>
+                <div class="filter-actions">
+                  <Button :label="t('selectTags')" icon="pi pi-tags" outlined @click="flashTagDialogVisible = true" />
+                  <Button
+                    v-if="selectedFlashTags.length"
+                    :label="t('selectVocab')"
+                    icon="pi pi-list-check"
+                    outlined
+                    :disabled="flashTagFilteredVocabulary.length === 0"
+                    @click="beginVocabularySelection"
+                  />
+                </div>
+                <p v-if="selectedFlashTags.length" class="filter-summary">
+                  {{ selectedFlashTags.join(', ') }}
+                  <span v-if="manualVocabularySelection">· {{ t('selectedVocabCount', { count: selectedFlashVocabularyIds.length }) }}</span>
+                </p>
+              </div>
+              <FloatLabel class="session-size-field">
+                <InputNumber id="sessionSize" v-model="flashSessionSize" :min="1" :max="Math.max(flashPracticeVocabulary.length, 1)" show-buttons />
                 <label for="sessionSize">{{ t('cardsThisSession') }}</label>
               </FloatLabel>
-              <Button :label="t('startFlashcards')" icon="pi pi-play" severity="contrast" :disabled="dueVocabulary.length === 0" @click="startFlashSession" />
+              <Button :label="t('startFlashcards')" icon="pi pi-play" severity="contrast" :disabled="flashPracticeVocabulary.length === 0" @click="startFlashSession" />
             </article>
 
             <article class="panel session-history-panel">
@@ -853,24 +1076,47 @@ onMounted(async () => {
 
         <div v-else-if="currentView === 'characters'" class="page study-page">
           <PageHead :eyebrow="t('charEyebrow')" :title="t('charTitle')" :copy="t('charCopy')" />
-          <article v-if="activeCharacter" :class="['study-card character-card', { revealed }]">
-            <Tag :value="activeCharacter.level" />
-            <h2 class="jp main-token">{{ activeCharacter.char }}</h2>
-            <template v-if="revealed">
-              <h3>{{ activeCharacter.reading }}</h3>
-              <p>{{ activeCharacter.meaning }}</p>
-              <blockquote>{{ t('strokesInfo', { count: activeCharacter.strokes, hint: activeCharacter.hint }) }}</blockquote>
-            </template>
-            <p v-else>{{ t('readingMeaningHidden') }}</p>
-          </article>
-          <div v-if="activeCharacter" class="study-actions">
-            <Button v-if="!revealed" :label="t('revealCharacter')" icon="pi pi-eye" severity="contrast" @click="revealed = true" />
-            <template v-else>
-              <Button :label="t('hard')" severity="danger" outlined @click="rateCharacter('hard')" />
-              <Button :label="t('good')" outlined @click="rateCharacter('good')" />
-              <Button :label="t('easy')" severity="secondary" @click="rateCharacter('easy')" />
-            </template>
-          </div>
+          <section v-if="activeCharacter" class="character-practice-panel">
+            <div class="character-practice-head">
+              <div>
+                <Tag :value="activeCharacter.level" />
+                <h2>{{ t('traceCharacter') }}</h2>
+                <p><span class="jp">{{ activeCharacter.char }}</span> · {{ activeCharacter.reading }} · {{ activeCharacter.meaning }}</p>
+              </div>
+              <strong v-if="characterDrawScore !== null" :class="['draw-score', characterDrawFeedback]">{{ characterDrawScore }}%</strong>
+            </div>
+
+            <div class="draw-board">
+              <span v-if="characterHintVisible" class="jp character-guide">{{ activeCharacter.char }}</span>
+              <canvas
+                ref="characterCanvas"
+                width="512"
+                height="512"
+                :aria-label="t('drawCharacterCanvas')"
+                @pointerdown="startCharacterStroke"
+                @pointermove="drawCharacterStroke"
+                @pointerup="finishCharacterStroke"
+                @pointercancel="finishCharacterStroke"
+              ></canvas>
+              <div class="draw-axis horizontal"></div>
+              <div class="draw-axis vertical"></div>
+            </div>
+
+            <div v-if="characterDrawFeedback" :class="['draw-feedback', characterDrawFeedback]">
+              <b>{{ characterDrawFeedback === 'correct' ? t('drawingCorrect') : t('drawingTryAgain') }}</b>
+              <span>{{ t('drawingScore', { score: characterDrawScore || 0 }) }}</span>
+            </div>
+
+            <p class="character-hint-copy">{{ t('strokesInfo', { count: activeCharacter.strokes, hint: activeCharacter.hint }) }}</p>
+
+            <div class="character-actions">
+              <Button :label="characterHintVisible ? t('hideHint') : t('showHint')" icon="pi pi-eye" outlined @click="characterHintVisible = !characterHintVisible" />
+              <Button :label="t('clearDrawing')" icon="pi pi-eraser" outlined :disabled="!characterHasDrawing" @click="clearCharacterCanvas" />
+              <Button v-if="characterDrawFeedback !== 'correct'" :label="t('checkDrawing')" icon="pi pi-check" severity="contrast" :disabled="!characterHasDrawing" @click="compareCharacterDrawing" />
+              <Button v-else :label="t('continuePractice')" icon="pi pi-arrow-right" severity="contrast" @click="rateCharacter('good')" />
+              <Button :label="t('skipCharacter')" severity="danger" outlined @click="rateCharacter('hard')" />
+            </div>
+          </section>
           <div v-else class="empty-state">{{ t('addCharacterCards') }}</div>
         </div>
 
@@ -1048,6 +1294,59 @@ onMounted(async () => {
         </div>
       </section>
     </main>
+
+    <Dialog v-model:visible="flashTagDialogVisible" modal :header="t('practiceTags')" class="selection-dialog">
+      <div class="selection-dialog-body">
+        <div class="selection-actions">
+          <span>{{ selectedFlashTags.length ? t('selectedTagCount', { count: selectedFlashTags.length }) : t('allTagsSelected') }}</span>
+          <div>
+            <Button :label="t('selectAll')" icon="pi pi-check-square" outlined @click="selectAllFlashTags" />
+            <Button :label="t('deselectAll')" icon="pi pi-times" outlined @click="deselectAllFlashTags" />
+          </div>
+        </div>
+        <div class="tag-picker dialog-picker" :aria-label="t('practiceTags')">
+          <button
+            v-for="tag in vocabularyTags"
+            :key="tag"
+            :class="['tag-toggle', { active: selectedFlashTags.includes(tag) }]"
+            type="button"
+            @click="toggleFlashTag(tag)"
+          >
+            {{ tag }}
+          </button>
+        </div>
+        <div class="dialog-actions">
+          <Button :label="t('applySelection')" severity="contrast" type="button" @click="flashTagDialogVisible = false" />
+        </div>
+      </div>
+    </Dialog>
+
+    <Dialog v-model:visible="flashVocabularyDialogVisible" modal :header="t('selectVocab')" class="selection-dialog">
+      <div class="selection-dialog-body">
+        <div class="selection-actions">
+          <span>{{ t('selectedVocabCount', { count: selectedFlashVocabularyIds.length }) }}</span>
+          <div>
+            <Button :label="t('selectAll')" icon="pi pi-check-square" outlined @click="selectAllFlashVocabulary" />
+            <Button :label="t('deselectAll')" icon="pi pi-times" outlined @click="deselectAllFlashVocabulary" />
+          </div>
+        </div>
+        <div class="vocab-picker dialog-picker" :aria-label="t('selectVocab')">
+          <button
+            v-for="entry in flashTagFilteredVocabulary"
+            :key="entry.id || entry.word"
+            :class="['vocab-toggle', { active: entry.id && selectedFlashVocabularyIds.includes(entry.id) }]"
+            type="button"
+            @click="toggleFlashVocabulary(entry)"
+          >
+            <span class="jp">{{ entry.word }}</span>
+            <small>{{ entry.meaning }}</small>
+          </button>
+        </div>
+        <div class="dialog-actions">
+          <Button :label="t('applySelection')" severity="contrast" type="button" @click="flashVocabularyDialogVisible = false" />
+        </div>
+      </div>
+    </Dialog>
 
     <Dialog v-model:visible="entryDialogVisible" modal :header="editingEntryId ? t('editWord') : t('addWord')" class="entry-dialog">
       <form class="form-grid dialog-form" @submit.prevent="saveVocabularyEntry">
