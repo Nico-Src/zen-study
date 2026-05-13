@@ -43,3 +43,4 @@ Thumbs.db
 # Do not ignore data/*.sqlite; WAL/SHM sidecars are runtime files.
 *.sqlite-shm
 *.sqlite-wal
+skills-lock.json
