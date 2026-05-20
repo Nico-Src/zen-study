@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CourseSummary, CreatorDraft, Profile } from './composables/useZenStudyDatabase'
+import type { CourseSummary, CreatorDraft, Profile, RepositoryRecord } from './composables/useZenStudyDatabase'
 
 type ViewName = 'dashboard' | 'repository' | 'map' | 'lesson' | 'characters' | 'vocabulary' | 'creator' | 'profile'
 type LessonState = 'idle' | 'correct' | 'incorrect'
@@ -123,6 +123,13 @@ type RepositorySection = {
   status: string
   expanded: boolean
   courses: CourseSummary[]
+}
+
+type LibraryImportPayload = RepositoryPayload | CourseSummary[] | {
+  courses?: CourseSummary[]
+  profile?: Profile
+  drafts?: CreatorDraft[]
+  repositories?: RepositoryRecord[]
 }
 
 type UnknownRecord = Record<string, unknown>
@@ -690,10 +697,11 @@ onMounted(async () => {
   if (import.meta.client) {
     setUiLanguage(window.localStorage.getItem('zenstudy_ui_language') || locale.value || 'en')
   }
-  const [storedCourses, storedDrafts, storedProfile] = await Promise.all([
+  const [storedCourses, storedDrafts, storedProfile, storedRepositories] = await Promise.all([
     database.getCourses(),
     database.getDrafts(),
-    database.getProfile()
+    database.getProfile(),
+    database.getRepositories()
   ])
   courses.value = storedCourses
   if (storedDrafts[0]) {
@@ -708,13 +716,13 @@ onMounted(async () => {
     creatorDrafts.value = [creatorDraft.value]
   }
   profile.value = storedProfile
-  repositorySections.value = [{
-    id: 'repo-example-japanese',
-    url: repositoryUrl.value,
-    status: `${catalogCourses.length} courses loaded from bundled example repository`,
-    expanded: true,
-    courses: catalogCourses.map(course => ({ ...course, syncStatus: 'available' as const }))
-  }]
+  repositorySections.value = dedupeRepositorySections([
+    ...storedRepositories.map(repositoryRecordToSection),
+    buildExampleRepositorySection()
+  ])
+  repositoryUrl.value = repositorySections.value[0]?.url || repositoryUrl.value
+  updateRepositoryStatus()
+  await saveRepositorySections()
   selectedCourseId.value = storedCourses[0]?.id || ''
   storageLoaded.value = true
 })
@@ -978,24 +986,103 @@ function draftToCourseSummary(draft: CreatorDraft): CourseSummary {
 }
 
 function repositorySectionId(url: string) {
-  return `repo-${url.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || Date.now()}`
+  return `repo-${normalizeRepositoryUrl(url).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || Date.now()}`
 }
 
-function upsertRepositorySection(url: string, nextCourses: CourseSummary[], status: string) {
-  const id = repositorySectionId(url)
+function normalizeRepositoryUrl(url: string) {
+  const trimmedUrl = url.trim().replace(/\/+$/, '')
+  try {
+    const parsedUrl = new URL(trimmedUrl)
+    parsedUrl.hash = ''
+    parsedUrl.protocol = parsedUrl.protocol.toLowerCase()
+    parsedUrl.hostname = parsedUrl.hostname.toLowerCase()
+    parsedUrl.pathname = parsedUrl.pathname.replace(/\/+$/, '')
+    return parsedUrl.toString().replace(/\/+$/, '').toLowerCase()
+  }
+  catch {
+    return trimmedUrl.toLowerCase()
+  }
+}
+
+function buildExampleRepositorySection(): RepositorySection {
+  return {
+    id: repositorySectionId(repositoryUrl.value),
+    url: repositoryUrl.value,
+    status: `${catalogCourses.length} courses loaded from bundled example repository`,
+    expanded: true,
+    courses: catalogCourses.map(course => ({ ...course, syncStatus: 'available' as const }))
+  }
+}
+
+function repositoryRecordToSection(record: RepositoryRecord): RepositorySection {
+  const isExampleRepository = normalizeRepositoryUrl(record.url) === normalizeRepositoryUrl(repositoryUrl.value)
+  return {
+    id: repositorySectionId(record.url),
+    url: record.url.trim(),
+    status: record.status || (isExampleRepository ? `${catalogCourses.length} courses loaded from bundled example repository` : 'Repository saved locally'),
+    expanded: record.expanded,
+    courses: record.courses?.length
+      ? record.courses.map(course => ({ ...course, syncStatus: 'available' as const }))
+      : isExampleRepository
+        ? catalogCourses.map(course => ({ ...course, syncStatus: 'available' as const }))
+        : []
+  }
+}
+
+function dedupeRepositorySections(sections: RepositorySection[]) {
+  const uniqueSections = new Map<string, RepositorySection>()
+  for (const section of sections) {
+    const normalizedUrl = normalizeRepositoryUrl(section.url)
+    if (!normalizedUrl || uniqueSections.has(normalizedUrl)) continue
+    uniqueSections.set(normalizedUrl, {
+      ...section,
+      id: repositorySectionId(section.url),
+      url: section.url.trim()
+    })
+  }
+  return Array.from(uniqueSections.values())
+}
+
+function updateRepositoryStatus() {
+  repositoryStatus.value = `${repositorySections.value.length} repository ${repositorySections.value.length === 1 ? 'URL' : 'URLs'} configured`
+}
+
+async function saveRepositorySections() {
+  const savedIds = new Set<string>()
+  for (const section of repositorySections.value) {
+    savedIds.add(section.id)
+    await database.saveRepository({
+      ...section,
+      updatedAt: new Date().toISOString()
+    })
+  }
+  for (const stored of await database.getRepositories()) {
+    if (!savedIds.has(stored.id)) await database.removeRepository(stored.id)
+  }
+}
+
+async function upsertRepositorySection(url: string, nextCourses: CourseSummary[], status: string) {
+  const trimmedUrl = url.trim().replace(/\/+$/, '')
+  const id = repositorySectionId(trimmedUrl)
   const section: RepositorySection = {
     id,
-    url,
+    url: trimmedUrl,
     status,
     expanded: true,
     courses: nextCourses.map(course => ({ ...course, syncStatus: 'available' as const }))
   }
-  repositorySections.value = [section, ...repositorySections.value.filter(item => item.id !== id)]
-  repositoryStatus.value = `${repositorySections.value.length} repository ${repositorySections.value.length === 1 ? 'URL' : 'URLs'} configured`
+  repositorySections.value = dedupeRepositorySections([
+    section,
+    ...repositorySections.value.filter(item => normalizeRepositoryUrl(item.url) !== normalizeRepositoryUrl(trimmedUrl))
+  ])
+  repositoryUrl.value = trimmedUrl
+  updateRepositoryStatus()
+  await saveRepositorySections()
 }
 
-function toggleRepositorySection(id: string) {
+async function toggleRepositorySection(id: string) {
   repositorySections.value = repositorySections.value.map(section => section.id === id ? { ...section, expanded: !section.expanded } : section)
+  await saveRepositorySections()
 }
 
 async function fetchRepository(url = repositoryUrl.value) {
@@ -1008,7 +1095,7 @@ async function fetchRepository(url = repositoryUrl.value) {
   try {
     if (trimmedUrl.includes('example.dev')) {
       const status = `${catalogCourses.length} courses loaded from bundled example repository`
-      upsertRepositorySection(trimmedUrl, catalogCourses, status)
+      await upsertRepositorySection(trimmedUrl, catalogCourses, status)
       showToast(status, 'success')
       return
     }
@@ -1018,7 +1105,7 @@ async function fetchRepository(url = repositoryUrl.value) {
     const nextCourses = normalizeImportedCourses(payload)
     if (!nextCourses.length) throw new Error('No courses were found in this repository.')
     const status = `${nextCourses.length} courses loaded from repository`
-    upsertRepositorySection(trimmedUrl, nextCourses, status)
+    await upsertRepositorySection(trimmedUrl, nextCourses, status)
     showToast(status, 'success')
   }
   catch (error) {
@@ -1029,6 +1116,7 @@ async function fetchRepository(url = repositoryUrl.value) {
     repositoryStatus.value = status
     const id = repositorySectionId(trimmedUrl)
     repositorySections.value = repositorySections.value.map(section => section.id === id ? { ...section, status } : section)
+    await saveRepositorySections()
     showToast(status, 'warning')
   }
 }
@@ -1145,6 +1233,10 @@ function exportLibrary() {
     exportedAt: new Date().toISOString(),
     profile: profile.value,
     courses: courses.value,
+    repositories: repositorySections.value.map(section => ({
+      ...section,
+      updatedAt: new Date().toISOString()
+    })),
     drafts: [creatorDraft.value]
   })
   showToast('Library JSON exported', 'success')
@@ -1155,11 +1247,19 @@ async function importLibrary(event: Event) {
   const file = input.files?.[0]
   if (!file) return
   try {
-    const payload = JSON.parse(await file.text()) as RepositoryPayload | CourseSummary[] | { courses?: CourseSummary[], profile?: Profile, drafts?: CreatorDraft[] }
+    const payload = JSON.parse(await file.text()) as LibraryImportPayload
     const importedCourses = normalizeImportedCourses(payload)
     for (const course of importedCourses) await addCourse(course)
     if (isRecord(payload) && 'profile' in payload && payload.profile) profile.value = await database.saveProfile(payload.profile as Profile)
     if (isRecord(payload) && 'drafts' in payload && Array.isArray(payload.drafts) && payload.drafts[0]) creatorDraft.value = await database.saveDraft(payload.drafts[0] as CreatorDraft)
+    if (isRecord(payload) && 'repositories' in payload && Array.isArray(payload.repositories)) {
+      repositorySections.value = dedupeRepositorySections([
+        ...payload.repositories.map(repositoryRecord => repositoryRecordToSection(repositoryRecord as RepositoryRecord)),
+        ...repositorySections.value
+      ])
+      updateRepositoryStatus()
+      await saveRepositorySections()
+    }
     showToast(`Imported ${importedCourses.length} courses`, 'success')
   }
   catch {
@@ -1467,7 +1567,8 @@ function openProfile() {
 </script>
 
 <template>
-  <div v-if="currentView === 'lesson'" class="lesson-shell">
+  <Transition name="shell-fade" mode="out-in">
+  <div v-if="currentView === 'lesson'" key="lesson" class="lesson-shell">
     <aside class="sidebar lesson-sidebar">
       <div class="brand">
         <div class="brand-mark">Z</div>
@@ -1583,22 +1684,31 @@ function openProfile() {
     </main>
 
     <aside class="lesson-aside">
-            <h2 v-if="lessonState !== 'idle'"><Icon name="material-symbols:menu-book" class="success-icon" /> Grammar Note</h2>
-          <article v-if="lessonState !== 'idle'" class="card" style="border-left: 4px solid var(--zs-primary);">
-        <h3 style="color: var(--zs-primary);">{{ currentExercise.grammarTitle }}</h3>
-        <p class="muted">{{ currentExercise.grammarNote }}</p>
-        <div class="tag cjk">{{ currentExercise.correctAnswer }}</div>
-      </article>
-      <article class="card">
-        <p class="eyebrow">Example</p>
-        <p class="cjk" style="font-size: 1.25rem;">{{ currentExercise.example }}</p>
-        <p v-if="currentExercise.exampleReading && showAlternativeReading" class="reading-line cjk">{{ currentExercise.exampleReading }}</p>
-        <p class="muted">{{ currentExercise.exampleTranslation }}</p>
-      </article>
-      <article class="validation-card warning">
-        <strong>Reading hint</strong>
-        <span class="muted">When は is used as a particle, it is pronounced “wa”.</span>
-      </article>
+      <Transition name="lesson-aside-reveal" mode="out-in">
+        <div v-if="lessonState === 'idle'" key="locked" class="lesson-aside-placeholder card">
+          <Icon name="material-symbols:lock" />
+          <strong>Check to reveal</strong>
+          <span class="muted">Notes, examples, and reading hints unlock after your answer.</span>
+        </div>
+        <div v-else key="revealed" class="lesson-aside-content">
+          <h2><Icon name="material-symbols:menu-book" class="success-icon" /> Grammar Note</h2>
+          <article class="card" style="border-left: 4px solid var(--zs-primary);">
+            <h3 style="color: var(--zs-primary);">{{ currentExercise.grammarTitle }}</h3>
+            <p class="muted">{{ currentExercise.grammarNote }}</p>
+            <div class="tag cjk">{{ currentExercise.correctAnswer }}</div>
+          </article>
+          <article class="card">
+            <p class="eyebrow">Example</p>
+            <p class="cjk" style="font-size: 1.25rem;">{{ currentExercise.example }}</p>
+            <p v-if="currentExercise.exampleReading && showAlternativeReading" class="reading-line cjk">{{ currentExercise.exampleReading }}</p>
+            <p class="muted">{{ currentExercise.exampleTranslation }}</p>
+          </article>
+          <article class="validation-card warning">
+            <strong>Reading hint</strong>
+            <span class="muted">When は is used as a particle, it is pronounced “wa”.</span>
+          </article>
+        </div>
+      </Transition>
     </aside>
 
     <aside v-if="showSettings" class="settings-drawer card">
@@ -1643,7 +1753,7 @@ function openProfile() {
     </div>
   </div>
 
-  <div v-else class="app-shell">
+  <div v-else key="app" class="app-shell">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">Z</div>
@@ -1688,6 +1798,8 @@ function openProfile() {
     </nav>
 
     <main class="page">
+      <Transition name="page-fade" mode="out-in">
+        <div :key="currentView" class="view-transition-frame">
       <div v-if="currentView === 'dashboard'" class="page-inner section-stack">
         <header class="page-header">
           <div>
@@ -1840,9 +1952,8 @@ function openProfile() {
             </button>
             <p class="repo-status"><Icon name="material-symbols:info" /> {{ section.status }}</p>
             <Transition name="soft-appear">
-              <div v-if="section.expanded" class="grid-3 repository-course-grid">
-                <article v-for="(course, index) in section.courses" :key="course.id" class="card course-card card-accent" :class="{ featured: index === 0 }" style="--accent: var(--zs-primary);">
-                  <div v-if="index === 0" class="course-cover" aria-hidden="true" />
+              <div v-if="section.expanded" class="repository-course-grid">
+                <article v-for="course in section.courses" :key="course.id" class="card course-card card-accent" style="--accent: var(--zs-primary);">
                   <div class="course-content">
                     <div>
                       <div class="action-row" style="justify-content: space-between; align-items: flex-start;">
@@ -1919,7 +2030,7 @@ function openProfile() {
               </article>
             </div>
           </div>
-          <button class="primary-button" style="position: fixed; right: 2.5rem; bottom: 2rem;" @click="startLesson(selectedLessonIndex)">Start {{ selectedLesson.title }} <Icon name="material-symbols:play-arrow" /></button>
+          <button class="primary-button map-start-button" @click="startLesson(selectedLessonIndex)">Start {{ selectedLesson.title }} <Icon name="material-symbols:play-arrow" /></button>
         </section>
         <section v-else class="card empty-state">
           <Icon name="material-symbols:download" />
@@ -2191,6 +2302,8 @@ function openProfile() {
           </div>
         </aside>
       </div>
+        </div>
+      </Transition>
     </main>
 
     <aside v-if="showSettings" class="settings-drawer card">
@@ -2234,4 +2347,5 @@ function openProfile() {
       />
     </div>
   </div>
+  </Transition>
 </template>

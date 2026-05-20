@@ -50,6 +50,15 @@ export type Profile = {
   badges: string[]
 }
 
+export type RepositoryRecord = {
+  id: string
+  url: string
+  status: string
+  expanded: boolean
+  courses: CourseSummary[]
+  updatedAt: string
+}
+
 const databaseName = 'zenstudy-local'
 const databaseVersion = 1
 const stores = ['courses', 'creatorDrafts', 'profile', 'repositories'] as const
@@ -143,6 +152,9 @@ export function useZenStudyDatabase() {
     removeCourse: (id: string) => deleteOne('courses', id),
     getDrafts: () => readAll<CreatorDraft>('creatorDrafts'),
     saveDraft: (draft: CreatorDraft) => writeOne('creatorDrafts', draft),
+    getRepositories: () => readAll<RepositoryRecord>('repositories'),
+    saveRepository: (repository: RepositoryRecord) => writeOne('repositories', repository),
+    removeRepository: (id: string) => deleteOne('repositories', id),
     getProfile,
     saveProfile: (profile: Profile) => writeOne('profile', profile)
   }

@@ -257,6 +257,10 @@ label.secondary-button:focus-within {
   padding: 2rem 2.5rem 4rem;
 }
 
+.view-transition-frame {
+  width: 100%;
+}
+
 .page-inner {
   width: min(100%, 78rem);
   margin: 0 auto;
@@ -640,21 +644,6 @@ h2 .iconify svg,
   background: var(--zs-surface);
 }
 
-.course-card.featured {
-  grid-column: span 2;
-  display: grid;
-  grid-template-columns: 18rem 1fr;
-  padding: 0;
-}
-
-.course-cover {
-  min-height: 15rem;
-  background:
-    linear-gradient(135deg, rgba(255, 216, 77, 0.18), rgba(76, 111, 255, 0.12)),
-    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.9) 0 18%, transparent 19%),
-    #ead8bd;
-}
-
 .course-meta-row {
   display: flex;
   flex-wrap: wrap;
@@ -751,7 +740,7 @@ h2 .iconify svg,
 .course-content {
   display: grid;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 0;
 }
 
 .lesson-shell {
@@ -914,6 +903,25 @@ h2 .iconify svg,
   padding: 2rem;
   border-left: 1px solid var(--zs-border);
   background: var(--zs-surface-soft);
+}
+
+.lesson-aside-content {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.lesson-aside-placeholder {
+  display: grid;
+  min-height: 18rem;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.lesson-aside-placeholder .iconify {
+  color: var(--zs-primary);
+  font-size: 2rem;
 }
 
 .success-icon {
@@ -1292,8 +1300,15 @@ h2 .iconify svg,
 }
 
 .repository-course-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--zs-border);
+}
+
+.repository-course-grid .empty-state {
+  grid-column: 1 / -1;
 }
 
 .danger-button {
@@ -1345,6 +1360,53 @@ h2 .iconify svg,
 
 .soft-appear-enter-to,
 .soft-appear-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 160ms ease;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+
+.page-fade-enter-to,
+.page-fade-leave-from {
+  opacity: 1;
+}
+
+.shell-fade-enter-active,
+.shell-fade-leave-active {
+  transition: opacity 180ms ease;
+}
+
+.shell-fade-enter-from,
+.shell-fade-leave-to {
+  opacity: 0;
+}
+
+.shell-fade-enter-to,
+.shell-fade-leave-from {
+  opacity: 1;
+}
+
+.lesson-aside-reveal-enter-active,
+.lesson-aside-reveal-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.lesson-aside-reveal-enter-from,
+.lesson-aside-reveal-leave-to {
+  opacity: 0;
+  transform: translateY(0.45rem);
+}
+
+.lesson-aside-reveal-enter-to,
+.lesson-aside-reveal-leave-from {
   opacity: 1;
   transform: translateY(0);
 }
@@ -1414,6 +1476,13 @@ h2 .iconify svg,
   gap: 0.75rem;
   align-items: center;
   margin-top: 1rem;
+}
+
+.map-start-button {
+  position: fixed;
+  right: 2.5rem;
+  bottom: 2rem;
+  z-index: 15;
 }
 
 .compact-button {
@@ -1623,7 +1692,6 @@ h2 .iconify svg,
   .creator-layout { grid-template-columns: 1fr; }
   .lesson-aside,
   .creator-side { display: none; }
-  .course-card.featured { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -1635,7 +1703,8 @@ h2 .iconify svg,
   .repo-toolbar { display: grid; grid-template-columns: 1fr; }
   .grid-2,
   .grid-3 { grid-template-columns: 1fr; }
-  .course-card.featured { grid-column: span 1; }
+  .repository-course-grid { grid-template-columns: 1fr; }
+  .map-start-button { right: 1rem; bottom: 5.25rem; }
   .answer-grid { grid-template-columns: repeat(2, 1fr); }
   .lesson-topbar { grid-template-columns: auto 1fr auto auto; padding: 0 1rem; }
   .lesson-profile-pill { display: none; }
