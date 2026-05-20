@@ -39,8 +39,5 @@ Thumbs.db
 *.swp
 *.swo
 
-# Keep SQLite study data versionable.
-# Do not ignore data/*.sqlite; WAL/SHM sidecars are runtime files.
-*.sqlite-shm
-*.sqlite-wal
 skills-lock.json
+mockups/

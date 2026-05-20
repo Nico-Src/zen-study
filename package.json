@@ -1,9 +1,9 @@
 {
-  "name": "japanese-study",
+  "name": "zen-study",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nuxt dev --host",
+    "dev": "nuxt dev --host 0.0.0.0",
     "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
@@ -12,17 +12,22 @@
   "dependencies": {
     "@iconify-json/material-symbols": "latest",
     "@iconify-json/twemoji": "^1.2.5",
+    "@nuxt/a11y": "^1.0.0-alpha.1",
     "@nuxt/fonts": "latest",
     "@nuxt/icon": "latest",
+    "@nuxtjs/i18n": "^10.3.0",
+    "@pinia/nuxt": "^0.11.3",
     "@primeuix/themes": "latest",
     "@primevue/nuxt-module": "latest",
-    "better-sqlite3": "^12.10.0",
+    "@vite-pwa/nuxt": "^1.1.1",
+    "@vueuse/nuxt": "^14.3.0",
     "nuxt": "latest",
     "primeicons": "latest",
     "primevue": "latest",
     "vue": "latest"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13"
+    "@nuxt/eslint": "^1.15.2",
+    "@nuxt/test-utils": "^4.0.3"
   }
 }
