@@ -34,6 +34,7 @@ export type CreatorDraft = {
   exercises: number
   words: string[]
   lessonData?: unknown[]
+  characterTables?: unknown[]
   validationIssues: string[]
   updatedAt: string
 }
@@ -48,6 +49,14 @@ export type Profile = {
   dailyGoal: number
   dailyXp: number
   badges: string[]
+  practiceStats?: {
+    coursesAdded: number
+    lessonsCompleted: number
+    vocabularyCorrect: number
+    characterCorrect: number
+    creatorCourses: number
+    dialogueExercisesCreated: number
+  }
 }
 
 export type RepositoryRecord = {
@@ -136,7 +145,15 @@ export function useZenStudyDatabase() {
     streak: 12,
     dailyGoal: 60,
     dailyXp: 38,
-    badges: ['First Repository', 'Hiragana Star', 'N5 Basics']
+    badges: [],
+    practiceStats: {
+      coursesAdded: 0,
+      lessonsCompleted: 0,
+      vocabularyCorrect: 0,
+      characterCorrect: 0,
+      creatorCourses: 0,
+      dialogueExercisesCreated: 0
+    }
   }
 
   async function getProfile() {

@@ -14,7 +14,7 @@ export default defineEventHandler(() => ({
 			version: '1.0.0',
 			levels: ['A1', 'N5'],
 			tags: ['beginner', 'kana', 'dialogues'],
-			stats: { lessons: 42, exercises: 260, words: 450, sentences: 120, dialogues: 12, characters: 92, characterTables: 2 },
+			stats: { lessons: 42, exercises: 262, words: 450, sentences: 120, dialogues: 1, characters: 92, characterTables: 2 },
 			syncStatus: 'available',
 			progress: 0,
 			updatedAt: '2026-05-20T00:00:00.000Z'
@@ -30,7 +30,7 @@ export default defineEventHandler(() => ({
 			version: '1.2.0',
 			levels: ['A1'],
 			tags: ['hiragana', 'writing-system'],
-			stats: { lessons: 12, exercises: 96, words: 0, sentences: 20, dialogues: 0, characters: 46, characterTables: 1 },
+			stats: { lessons: 12, exercises: 97, words: 0, sentences: 20, dialogues: 0, characters: 46, characterTables: 1 },
 			syncStatus: 'available',
 			progress: 0,
 			updatedAt: '2026-05-18T00:00:00.000Z'
@@ -46,7 +46,7 @@ export default defineEventHandler(() => ({
 			version: '0.9.4',
 			levels: ['A1', 'A2'],
 			tags: ['dialogues', 'travel'],
-			stats: { lessons: 18, exercises: 140, words: 160, sentences: 90, dialogues: 24, characters: 0, characterTables: 0 },
+			stats: { lessons: 18, exercises: 141, words: 160, sentences: 90, dialogues: 2, characters: 0, characterTables: 0 },
 			syncStatus: 'available',
 			progress: 0,
 			updatedAt: '2026-05-12T00:00:00.000Z'
