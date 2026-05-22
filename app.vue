@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { CourseSummary, CreatorDraft, Profile, RepositoryRecord } from './composables/useZenStudyDatabase'
+import { dueReviewItems, nextDueReviewItem, recordReviewAttempt, reviewKey } from './utils/reviewEngine'
+import type { ReviewKind } from './utils/reviewEngine'
+import { slugifyFilename } from './utils/slug'
 
 type ViewName = 'dashboard' | 'repository' | 'map' | 'lesson' | 'characters' | 'vocabulary' | 'dialogues' | 'creator' | 'profile'
 type LessonState = 'idle' | 'correct' | 'incorrect'
@@ -92,13 +95,19 @@ type VocabularyItem = {
   term: string
   reading?: string
   meaning: string
+  partOfSpeech?: string
   example?: string
+  note?: string
 }
 
 type CreatorWord = {
   id: string
   term: string
+  reading: string
+  meaning: string
+  partOfSpeech: string
   example: string
+  note: string
 }
 
 type CreatorCharacterTable = {
@@ -264,6 +273,7 @@ const profile = ref<Profile>({
   dailyGoal: 60,
   dailyXp: 0,
   badges: [],
+  reviewItems: [],
   practiceStats: {
     coursesAdded: 0,
     lessonsCompleted: 0,
@@ -287,6 +297,7 @@ const creatorDraft = ref<CreatorDraft>({
   updatedAt: new Date().toISOString()
 })
 const creatorDrafts = ref<CreatorDraft[]>([])
+const previewCourse = ref<CourseSummary>()
 const selectedCreatorCharacterTableId = ref('table-hiragana-vowels')
 const characterTableCharacterInput = ref('')
 const creatorCharacterTables = ref<CreatorCharacterTable[]>([
@@ -371,7 +382,7 @@ const uiCopy = {
     dailyXpGoal: 'Daily XP Goal', uiLanguage: 'UI Language', saveSettings: 'Save Settings', vocabularyPractice: 'Vocabulary Practice',
     randomPractice: 'Random practice', sequentialPractice: 'Sequential practice', random: 'Random', noAddedCourse: 'No Added Course',
     noVocabularyYet: 'No Vocabulary Yet', trainWordsFromCourse: 'Train words from your added course data.', practiceCharactersFromCourse: 'Practice writing-system tables from added course data.', practiceDialoguesFromCourse: 'Practice dialogue scenes from your added course data.', fromLanguage: 'from', noLocalCoursesYet: 'No local courses yet', addCourseFromRepository: 'Add a course from the repository to start learning.', progress: 'Progress', practice: 'Practice', continueCourse: 'Continue', of: 'of', xpEarnedToday: 'XP earned today', browseCourses: 'Browse Courses', characterTablePractice: 'Character Table Practice', noCharacterTables: 'No Character Tables Added', addCharacterCourse: 'Add a course with character-table content before practicing characters.', prompt: 'Prompt', chooseReadingFor: 'Choose the reading for', check: 'Check', correct: 'Correct.', notQuite: 'Not quite.', addCourseBeforeVocab: 'Add a course before training vocabulary.', addCourseBeforeDialogues: 'Add a course before practicing dialogues.', noCourseVocabulary: 'This course does not expose vocabulary items yet.', noCourseDialogues: 'This course does not expose dialogue scenes yet.', addWordsInCreator: 'Add Words in Creator', addDialoguesInCreator: 'Add Dialogues in Creator', term: 'Term', chooseCorrectMeaning: 'Choose the correct meaning.', nextWord: 'Next Word', nextDialogue: 'Next Dialogue', localCourse: 'local course', localCourses: 'local courses', courseSingular: 'course', coursePlural: 'courses', wordsUnit: 'words', sentencesUnit: 'sentences', dialoguesUnit: 'dialogues', tablesUnit: 'tables', noVisibleCourses: 'No visible courses', tryDisablingNonAddedFilter: 'Try disabling the non-added filter.', completed: 'Completed', play: 'Play', start: 'Start', repositoryUrlConfigured: 'repository URL configured', repositoryUrlsConfigured: 'repository URLs configured', coursesLoadedBundled: 'courses loaded from bundled example repository', coursesLoadedRepository: 'courses loaded from repository', repositorySavedLocally: 'Repository saved locally', fetching: 'Fetching', exampleRepositoryLoaded: 'Example repository loaded', brandSubtitle: 'Local-first Learning', localFirstCompatible: 'Local-first / IndexedDB compatible', repositoryUrlLabel: 'Repository URL', repositoryUrlPlaceholder: 'Repository server URL', selectBestAnswer: 'Select the best answer.', hideReading: 'Hide reading', showReading: 'Show reading', revealMeaningReady: 'Reveal the meaning when you are ready.', revealMeaning: 'Reveal Meaning', reveal: 'Reveal', tryAgain: 'Try again', correctAnswerLabel: 'Correct answer', tapChunksInOrder: 'Tap chunks in order.', checkToReveal: 'Check to reveal', revealUnlocks: 'Notes, examples, and reading hints unlock after your answer.', grammarNoteLabel: 'Grammar Note', readingHint: 'Reading hint', particleHint: 'When は is used as a particle, it is pronounced “wa”.', profile: 'Profile', runningCourses: 'Running Courses', noCoursesInProgress: 'No courses in progress.', completedCourses: 'Completed Courses', completedCoursesAppear: 'Completed courses will appear here.', lessonsCompleted: 'lessons completed', badgesEmpty: 'Badges earned through repositories, lessons, and practice will show here.', dialogues: 'Dialogues', dialoguePractice: 'Dialogue Practice', addDialogue: 'Add Dialogue', dialogueLabel: 'Dialogue', selectedDialogue: 'Selected Dialogue', dialogueTitle: 'Dialogue Title', dialogueTurns: 'turns', noDialoguesYet: 'No dialogues yet', addDialogueToLesson: 'Add a dialogue to this lesson.', moveDialogueUp: 'Move dialogue up', moveDialogueDown: 'Move dialogue down', dialogueScene: 'Dialogue Scene', dialogueParticipants: 'Dialogue Participants', speakerA: 'Speaker A', speakerB: 'Speaker B', learnerRole: 'Learner Role', dialogueLines: 'Dialogue Lines', dialogueLinesHelp: 'One line per turn. Use “Speaker: text | translation”.', responsePromptLine: 'Prompt Line', badgeFirstRepository: 'First Repository', badgeLessonBuilder: 'Lesson Builder', badgeVocabStarter: 'Vocabulary Spark', badgeKanaStarter: 'Kana Starter', badgeCourseFinisher: 'Course Finisher', badgeDialogueMaker: 'Dialogue Maker', badgeStreakKeeper: 'Streak Keeper', badgeFirstRepositoryDescription: 'Add your first repository course.', badgeLessonBuilderDescription: 'Complete your first lesson.', badgeVocabStarterDescription: 'Answer a vocabulary prompt correctly.', badgeKanaStarterDescription: 'Answer a character-table prompt correctly.', badgeCourseFinisherDescription: 'Finish every lesson in a course.', badgeDialogueMakerDescription: 'Create a course with dialogue practice.', badgeStreakKeeperDescription: 'Keep a learning streak alive.', isReadAs: 'is read as', tryAgainCharacterReading: 'Try again:', xpEarnedToastLabel: 'earned', repositoryUrlRequired: 'Enter a repository URL first.', courseSavedToIndexedDb: 'saved to IndexedDB', addCourseBeforeLessons: 'Add a course before starting lessons.', courseRemovedLocal: 'Course removed from local library', libraryJsonExported: 'Library JSON exported', coursesImported: 'courses imported', importFailed: 'Import failed. Please choose a ZenStudy JSON file.', draftSavedLocally: 'Draft saved locally', courseUpdatedInMyCourses: 'updated in My Courses', courseAddedInMyCourses: 'added in My Courses', courseJsonExported: 'Course JSON exported', draftImportFailed: 'Draft import failed. Please choose a course JSON file.', courseNeedsLesson: 'A course needs at least one lesson.', lessonNeedsExercise: 'A lesson needs at least one exercise.', audioRequirementComplete: 'Audio requirement marked complete', cardRevealed: 'Card revealed.', chooseAnswerFirst: 'Choose an answer first.', settingsSaved: 'Settings saved', addCharacter: 'Add Character', characterPlaceholder: 'Type one or more characters, separated by spaces or new lines.', charactersHelp: 'Add as many characters as you need. Separate them with spaces or new lines.',
-    courseDraft: 'Course Draft', newCourse: 'New Course', courseEditor: 'Course Editor', draft: 'Draft', courseTitle: 'Course Title', courseDescription: 'Course Description', sourceLanguage: 'Source Language', targetLanguage: 'Target Language', updateMyCourse: 'Update My Course', addToMyCourses: 'Add to My Courses', testPlay: 'Test Play', jsonView: 'JSON View', saveDraft: 'Save Draft', importCourse: 'Import Course', exportCourse: 'Export Course', lessons: 'Lessons', addLesson: 'Add Lesson', lessonLabel: 'Lesson', lessonEditor: 'Lesson Editor', lessonTitle: 'Lesson Title', explanationText: 'Explanation Text', targetVocab: 'Target Vocab', word: 'Word', exampleSentence: 'Example Sentence', newVocabulary: 'New vocabulary', addWord: 'Add Word', practiceExercises: 'Practice Exercises', addExercise: 'Add Exercise', exerciseLabel: 'Exercise', selectedExercise: 'Selected Exercise', exerciseType: 'Exercise Type', promptQuestion: 'Prompt / Question', wordPhrase: 'Word / Phrase', sentence: 'Sentence', illustration: 'Illustration', illustrationPlaceholder: 'Emoji, icon text, or image URL', meaning: 'Meaning', alternativeReading: 'Alternative Reading', readingPlaceholder: 'Hiragana, romaji, etc.', translation: 'Translation', blankBefore: 'Blank Before', blankAfter: 'Blank After', availableChunks: 'Available Chunks', chunksPlaceholder: 'Chunk 1 | Chunk 2 | Chunk 3', correctOrder: 'Correct Order', orderHelp: 'Learners tap available chunks into the answer area. The correct order is saved as the answer automatically.', correctAnswer: 'Correct Answer', hint: 'Hint', grammarTitle: 'Grammar Title', grammarNote: 'Grammar Note', exampleReading: 'Example Reading', exampleTranslation: 'Example Translation', answerOptions: 'Answer Options', option: 'Option', validation: 'Validation', readyToExport: 'Ready to Export', noBlockingIssues: 'No blocking issues found.', markAudioAttached: 'Mark Audio Attached', courseFieldCoverage: 'Course Field Coverage', courseStats: 'Course Stats', totalLessons: 'Total Lessons', totalExercises: 'Total Exercises', totalDialogues: 'Total Dialogues', vocabCount: 'Vocab Count', moveExerciseUp: 'Move exercise up', moveExerciseDown: 'Move exercise down', audioMissing: 'Audio Missing', needsAttention: 'Needs Attention', titleDescriptionRequired: 'Title and description are required.', oneLessonRequired: 'At least one lesson is required.', lessonExerciseRequired: 'Every lesson needs at least one exercise.', nativeAudioMissing: 'Exercise 1 lacks native audio pronunciation.', coverageCoreFields: 'Prompt, type, sentence, translation', coverageReadings: 'Alternative and example readings', coverageBlankText: 'Fill-blank before/after text', coverageAnswerOptions: 'Answer options/chips and correct answer', coverageGrammarExamples: 'Hints, grammar notes, examples', coverageDialogues: 'Dedicated dialogue scenes and turns', typeLearnCard: 'Learn Card', typeChoice: 'Choice', typeTranslate: 'Translate', typeFillBlank: 'Fill Blank', typeSentenceOrder: 'Sentence Order'
+    dueReview: 'Due Review', weakItems: 'Weak Items', reviewDue: 'review prompts due', vocabularyMeans: 'means', selectedAnswerWas: 'Your answer was', previewDraft: 'Preview Draft', partOfSpeech: 'Part of Speech', usageNote: 'Usage Note', wordMeaningRequired: 'Word and meaning are required.', answerOptionsRequired: 'At least two answer options are required.', correctAnswerRequired: 'A correct answer is required.', dialogueLearnerTurnRequired: 'Add at least one learner turn.', characterPromptRequired: 'Add at least two answers and mark the correct one.', courseDraft: 'Course Draft', newCourse: 'New Course', courseEditor: 'Course Editor', draft: 'Draft', courseTitle: 'Course Title', courseDescription: 'Course Description', sourceLanguage: 'Source Language', targetLanguage: 'Target Language', updateMyCourse: 'Update My Course', addToMyCourses: 'Add to My Courses', testPlay: 'Test Play', jsonView: 'JSON View', saveDraft: 'Save Draft', importCourse: 'Import Course', exportCourse: 'Export Course', lessons: 'Lessons', addLesson: 'Add Lesson', lessonLabel: 'Lesson', lessonEditor: 'Lesson Editor', lessonTitle: 'Lesson Title', explanationText: 'Explanation Text', targetVocab: 'Target Vocab', word: 'Word', exampleSentence: 'Example Sentence', newVocabulary: 'New vocabulary', addWord: 'Add Word', practiceExercises: 'Practice Exercises', addExercise: 'Add Exercise', exerciseLabel: 'Exercise', selectedExercise: 'Selected Exercise', exerciseType: 'Exercise Type', promptQuestion: 'Prompt / Question', wordPhrase: 'Word / Phrase', sentence: 'Sentence', illustration: 'Illustration', illustrationPlaceholder: 'Emoji, icon text, or image URL', meaning: 'Meaning', alternativeReading: 'Alternative Reading', readingPlaceholder: 'Hiragana, romaji, etc.', translation: 'Translation', blankBefore: 'Blank Before', blankAfter: 'Blank After', availableChunks: 'Available Chunks', chunksPlaceholder: 'Chunk 1 | Chunk 2 | Chunk 3', correctOrder: 'Correct Order', orderHelp: 'Learners tap available chunks into the answer area. The correct order is saved as the answer automatically.', correctAnswer: 'Correct Answer', hint: 'Hint', grammarTitle: 'Grammar Title', grammarNote: 'Grammar Note', exampleReading: 'Example Reading', exampleTranslation: 'Example Translation', answerOptions: 'Answer Options', option: 'Option', validation: 'Validation', readyToExport: 'Ready to Export', noBlockingIssues: 'No blocking issues found.', markAudioAttached: 'Mark Audio Attached', courseFieldCoverage: 'Course Field Coverage', courseStats: 'Course Stats', totalLessons: 'Total Lessons', totalExercises: 'Total Exercises', totalDialogues: 'Total Dialogues', vocabCount: 'Vocab Count', moveExerciseUp: 'Move exercise up', moveExerciseDown: 'Move exercise down', audioMissing: 'Audio Missing', needsAttention: 'Needs Attention', titleDescriptionRequired: 'Title and description are required.', oneLessonRequired: 'At least one lesson is required.', lessonExerciseRequired: 'Every lesson needs at least one exercise.', nativeAudioMissing: 'Exercise 1 lacks native audio pronunciation.', coverageCoreFields: 'Prompt, type, sentence, translation', coverageReadings: 'Alternative and example readings', coverageBlankText: 'Fill-blank before/after text', coverageAnswerOptions: 'Answer options/chips and correct answer', coverageGrammarExamples: 'Hints, grammar notes, examples', coverageDialogues: 'Dedicated dialogue scenes and turns', typeLearnCard: 'Learn Card', typeChoice: 'Choice', typeTranslate: 'Translate', typeFillBlank: 'Fill Blank', typeSentenceOrder: 'Sentence Order'
   },
   de: {
     dashboard: 'Übersicht', courses: 'Kurse', courseMap: 'Kurskarte', characters: 'Zeichen', vocabulary: 'Vokabeln', creator: 'Editor',
@@ -514,17 +525,6 @@ function badgeUnlockedMessage(id: BadgeId) {
 function characterReadingMessage(state: LessonState, character = 'き', reading = 'ki') {
   const prefix = state === 'correct' ? t('correct') : t('notQuite')
   return `${prefix} ${character} ${t('isReadAs')} ${reading}.`
-}
-
-function slugifyFilename(value: string, fallback = 'zenstudy-course') {
-  const slug = value
-    .trim()
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return slug || fallback
 }
 
 function courseExportPayload() {
@@ -983,7 +983,11 @@ const visibleRepositorySections = computed(() => repositorySections.value.map(se
     .map(course => courses.value.find(item => item.id === course.id) || course)
     .filter(course => !showOnlyNonAdded.value || course.syncStatus !== 'downloaded')
 })))
-const activeCourses = computed(() => storageLoaded.value ? courses.value : catalogCourses.slice(0, 2).map(course => ({ ...course, syncStatus: 'downloaded' as const })))
+const activeCourses = computed(() => {
+  const baseCourses = storageLoaded.value ? courses.value : catalogCourses.slice(0, 2).map(course => ({ ...course, syncStatus: 'downloaded' as const }))
+  if (!previewCourse.value) return baseCourses
+  return [previewCourse.value, ...baseCourses.filter(course => course.id !== previewCourse.value?.id)]
+})
 const activeCourse = computed(() => activeCourses.value.find(course => course.id === selectedCourseId.value) || activeCourses.value[0])
 const activeContent = computed(() => activeCourse.value ? getCourseContent(activeCourse.value.id) : undefined)
 const characterCourseOptions = computed(() => activeCourses.value.filter(course => {
@@ -1012,6 +1016,8 @@ const runningCourses = computed(() => activeCourses.value.filter(course => !cour
 const completedCourses = computed(() => activeCourses.value.filter(course => courseCompletion.value[course.id]?.complete))
 const exerciseDisplaySentence = computed(() => currentExercise.value.type === 'fill-blank' && lessonState.value === 'idle' ? '' : currentExercise.value.sentence)
 const dailyProgress = computed(() => Math.min(100, Math.round((profile.value.dailyXp / Math.max(profile.value.dailyGoal, 1)) * 100)))
+const dueReviews = computed(() => dueReviewItems(profile.value.reviewItems || []))
+const dueReview = computed(() => nextDueReviewItem(profile.value.reviewItems || [], undefined, selectedCourse.value?.id))
 const xpPerLevel = 500
 const displayedXp = computed(() => profile.value.xp + xpAnimationBoost.value)
 const profileLevel = computed(() => Math.floor(displayedXp.value / xpPerLevel) + 1)
@@ -1090,6 +1096,11 @@ const vocabularyOptions = computed(() => {
   const distractors = vocabularyItems.value.map(item => item.meaning).filter(meaning => meaning !== correct).slice(0, 3)
   return Array.from(new Set([correct, ...distractors])).filter(Boolean).sort()
 })
+const vocabularyFeedbackMessage = computed(() => {
+  if (!activeVocabularyItem.value || vocabularyFeedback.value === 'idle') return ''
+  if (vocabularyFeedback.value === 'correct') return `${t('correct')} ${activeVocabularyItem.value.term} ${t('vocabularyMeans')} ${activeVocabularyItem.value.meaning}.`
+  return `${t('notQuite')} ${t('selectedAnswerWas')} ${selectedVocabularyAnswer.value}. ${activeVocabularyItem.value.term} ${t('vocabularyMeans')} ${activeVocabularyItem.value.meaning}.`
+})
 const creatorSchemaCoverage = computed(() => [
   t('coverageCoreFields'),
   t('coverageReadings'),
@@ -1099,12 +1110,40 @@ const creatorSchemaCoverage = computed(() => [
   t('coverageDialogues')
 ])
 const creatorJson = computed(() => JSON.stringify(courseExportPayload(), null, 2))
-const creatorIssues = computed(() => [
-  ...(creatorDraft.value.title.trim() && creatorDraft.value.description.trim() ? [] : [t('titleDescriptionRequired')]),
-  ...(creatorLessons.value.length ? [] : [t('oneLessonRequired')]),
-  ...(creatorLessons.value.every(lesson => lesson.exercises.length) ? [] : [t('lessonExerciseRequired')]),
-  ...(audioAttached.value ? [] : [t('nativeAudioMissing')])
-])
+const creatorIssues = computed(() => {
+  const issues = [
+    ...(creatorDraft.value.title.trim() && creatorDraft.value.description.trim() ? [] : [t('titleDescriptionRequired')]),
+    ...(creatorLessons.value.length ? [] : [t('oneLessonRequired')]),
+    ...(creatorLessons.value.every(lesson => lesson.exercises.length) ? [] : [t('lessonExerciseRequired')]),
+    ...(audioAttached.value ? [] : [t('nativeAudioMissing')])
+  ]
+
+  creatorLessons.value.forEach((lesson, lessonIndex) => {
+    const normalizedWords = normalizeCreatorWords(lesson.words)
+    normalizedWords.forEach((word, wordIndex) => {
+      if (!word.term.trim() || !word.meaning.trim()) issues.push(`${t('lessonLabel')} ${lessonIndex + 1}, ${t('word')} ${wordIndex + 1}: ${t('wordMeaningRequired')}`)
+    })
+    lesson.exercises.forEach((exercise, exerciseIndex) => {
+      if (!exercise.prompt.trim() || !exercise.sentence.trim()) issues.push(`${t('lessonLabel')} ${lessonIndex + 1}, ${t('exerciseLabel')} ${exerciseIndex + 1}: ${t('titleDescriptionRequired')}`)
+      if (exercise.type !== 'learn' && exercise.type !== 'sentence-order' && exerciseAnswerOptions(exercise).length < 2) issues.push(`${t('lessonLabel')} ${lessonIndex + 1}, ${t('exerciseLabel')} ${exerciseIndex + 1}: ${t('answerOptionsRequired')}`)
+      if (exercise.type !== 'learn' && !exercise.answer.trim()) issues.push(`${t('lessonLabel')} ${lessonIndex + 1}, ${t('exerciseLabel')} ${exerciseIndex + 1}: ${t('correctAnswerRequired')}`)
+    })
+    lesson.dialogues.forEach((dialogue, dialogueIndex) => {
+      const learnerLines = dialogue.lines.filter(line => line.speaker === dialogue.learnerRole)
+      if (!learnerLines.length) issues.push(`${t('lessonLabel')} ${lessonIndex + 1}, ${t('dialogueLabel')} ${dialogueIndex + 1}: ${t('dialogueLearnerTurnRequired')}`)
+      learnerLines.forEach((line) => {
+        if (dialogueLineOptions(line).length < 2 || !(line.correctAnswer || line.text).trim()) issues.push(`${t('lessonLabel')} ${lessonIndex + 1}, ${dialogue.title}: ${t('answerOptionsRequired')}`)
+      })
+    })
+  })
+  creatorCharacterTables.value.forEach((table) => {
+    table.prompts.forEach((prompt) => {
+      if (!prompt.correctAnswer.trim() || prompt.answers.length < 2) issues.push(`${table.title}, ${prompt.character}: ${t('characterPromptRequired')}`)
+    })
+  })
+
+  return Array.from(new Set(issues))
+})
 
 const navigation = [
   { key: 'dashboard', labelKey: 'dashboard', icon: 'material-symbols:dashboard' },
@@ -1147,12 +1186,15 @@ onMounted(async () => {
 })
 
 function switchView(view: ViewName) {
+  if (view === 'creator') normalizeCreatorState()
   if (view === 'characters' && characterCourseOptions.value.length && !characterCourseOptions.value.some(course => course.id === selectedCourseId.value)) {
     selectPracticeCourse(characterCourseOptions.value[0].id)
   }
   if (view === 'dialogues' && dialogueCourseOptions.value.length && !dialogueCourseOptions.value.some(course => course.id === selectedCourseId.value)) {
     selectPracticeCourse(dialogueCourseOptions.value[0].id)
   }
+  if (view === 'vocabulary') selectDueVocabularyItem()
+  if (view === 'characters') selectDueCharacterItem()
   currentView.value = view
   selectedAnswer.value = ''
   orderedAnswer.value = []
@@ -1361,7 +1403,8 @@ function normalizeImportedCourses(payload: unknown) {
 
 function getCourseContent(courseId?: string) {
   if (!courseId) return undefined
-  return draftCourseContents.value[courseId] || courseContent[courseId]
+  const draftContents = draftCourseContents.value || {}
+  return draftContents[courseId] || courseContent[courseId]
 }
 
 function normalizeCreatorExercise(value: unknown, index: number): CreatorExercise {
@@ -1390,7 +1433,7 @@ function normalizeCreatorExercise(value: unknown, index: number): CreatorExercis
   }
 }
 
-function normalizeCreatorWords(value: unknown, fallbackWords: string[] = []): CreatorWord[] {
+function normalizeCreatorWords(value: unknown, fallbackWords: unknown[] = []): CreatorWord[] {
   const source = Array.isArray(value) ? value : fallbackWords
   return source.map((item, index) => {
     if (isRecord(item)) {
@@ -1398,13 +1441,22 @@ function normalizeCreatorWords(value: unknown, fallbackWords: string[] = []): Cr
       return {
         id: typeof item.id === 'string' ? item.id : `word-${Date.now()}-${index}`,
         term,
-        example: typeof item.example === 'string' ? item.example : ''
+        reading: typeof item.reading === 'string' ? item.reading : '',
+        meaning: typeof item.meaning === 'string' ? item.meaning : typeof item.translation === 'string' ? item.translation : '',
+        partOfSpeech: typeof item.partOfSpeech === 'string' ? item.partOfSpeech : '',
+        example: typeof item.example === 'string' ? item.example : '',
+        note: typeof item.note === 'string' ? item.note : ''
       }
     }
+    const term = String(item)
     return {
-      id: `word-${String(item).replace(/\s+/g, '-').toLowerCase()}-${index}`,
-      term: String(item),
-      example: ''
+      id: `word-${term.replace(/\s+/g, '-').toLowerCase()}-${index}`,
+      term,
+      reading: '',
+      meaning: '',
+      partOfSpeech: '',
+      example: '',
+      note: ''
     }
   }).filter(word => word.term.trim())
 }
@@ -1499,12 +1551,25 @@ function setCharacterPromptCorrectAnswer(prompt: CharacterPrompt, answer: string
 }
 
 function addCharacterPromptOption(prompt: CharacterPrompt) {
-  const answer = window.prompt(t('option'))?.trim()
-  if (!answer) return
+  const answer = `${t('option')} ${prompt.answers.length + 1}`
   prompt.answers = Array.from(new Set([...prompt.answers, answer]))
 }
 
-function normalizeCreatorLessons(data: unknown, words: string[] = []) {
+function updateCharacterPromptOption(prompt: CharacterPrompt, oldAnswer: string, nextAnswer: string) {
+  const answer = nextAnswer.trim()
+  if (!answer) return
+  prompt.answers = Array.from(new Set(prompt.answers.map(item => item === oldAnswer ? answer : item).filter(Boolean)))
+  if (prompt.correctAnswer === oldAnswer) prompt.correctAnswer = answer
+  if (!prompt.answers.includes(prompt.correctAnswer)) prompt.correctAnswer = prompt.answers[0] || ''
+}
+
+function removeCharacterPromptOption(prompt: CharacterPrompt, answer: string) {
+  if (prompt.answers.length <= 1) return
+  prompt.answers = prompt.answers.filter(item => item !== answer)
+  if (prompt.correctAnswer === answer) prompt.correctAnswer = prompt.answers[0] || ''
+}
+
+function normalizeCreatorLessons(data: unknown, words: unknown[] = []) {
   const lessons = Array.isArray(data) ? data : []
   return lessons.length
     ? lessons.map((value, index) => {
@@ -1527,6 +1592,17 @@ function normalizeCreatorLessons(data: unknown, words: string[] = []) {
     : [{ id: `lesson-${Date.now()}`, title: 'Lesson 1', explanation: 'Write the lesson explanation here.', words: normalizeCreatorWords(words), exercises: [createCreatorExercise('Choose the correct answer.')], dialogues: [] }]
 }
 
+function normalizeCreatorState() {
+  creatorLessons.value = normalizeCreatorLessons(creatorLessons.value, creatorDraft.value.words || [])
+  creatorCharacterTables.value = normalizeCreatorCharacterTables(creatorCharacterTables.value)
+  selectedCreatorLessonId.value = selectedCreatorLessonId.value || creatorLessons.value[0]?.id || ''
+  selectedCreatorExerciseId.value = selectedCreatorExerciseId.value || creatorLessons.value[0]?.exercises[0]?.id || ''
+  selectedCreatorDialogueId.value = selectedCreatorDialogueId.value || creatorLessons.value[0]?.dialogues[0]?.id || ''
+  selectedCreatorCharacterTableId.value = selectedCreatorCharacterTableId.value || creatorCharacterTables.value[0]?.id || ''
+}
+
+creatorLessons.value = normalizeCreatorLessons(creatorLessons.value)
+
 function draftToCourseContent(draft: CreatorDraft): CourseContent {
   const lessons = normalizeCreatorLessons(draft.lessonData, draft.words)
   const tables = normalizeCreatorCharacterTables(draft.characterTables)
@@ -1536,7 +1612,15 @@ function draftToCourseContent(draft: CreatorDraft): CourseContent {
     mapDescription: draft.description,
     characterTables: tables.map(table => ({ ...table })),
     characters: Array.from(new Set(tables.flatMap(table => table.characters))),
-    vocabulary: lessons.flatMap(lesson => lesson.words).map(word => ({ id: `vocab-${word.id}`, term: word.term, reading: '', meaning: word.term, example: word.example })),
+    vocabulary: lessons.flatMap(lesson => lesson.words).map(word => ({
+      id: `vocab-${word.id}`,
+      term: word.term,
+      reading: word.reading,
+      meaning: word.meaning || word.term,
+      partOfSpeech: word.partOfSpeech,
+      example: word.example,
+      note: word.note
+    })),
     dialogues: lessons.flatMap(lesson => lesson.dialogues.map(dialogue => ({
       id: dialogue.id,
       lessonId: lesson.id,
@@ -1801,12 +1885,13 @@ function selectPracticeCourse(id: string) {
 }
 
 function buildDraftSnapshot() {
+  const normalizedLessons = normalizeCreatorLessons(creatorLessons.value)
   return {
     ...creatorDraft.value,
-    lessons: creatorLessons.value.length,
-    exercises: creatorLessons.value.reduce((total, lesson) => total + lesson.exercises.length, 0),
-    words: Array.from(new Set(creatorLessons.value.flatMap(lesson => lesson.words.map(word => word.term)))),
-    lessonData: creatorLessons.value,
+    lessons: normalizedLessons.length,
+    exercises: normalizedLessons.reduce((total, lesson) => total + lesson.exercises.length, 0),
+    words: normalizedLessons.flatMap(lesson => lesson.words),
+    lessonData: normalizedLessons,
     characterTables: creatorCharacterTables.value,
     validationIssues: creatorIssues.value,
     updatedAt: new Date().toISOString()
@@ -1991,6 +2076,13 @@ async function addCreatorDraftToCourses() {
   showToast(`${savedCourse.name} ${t(wasAdded ? 'courseUpdatedInMyCourses' : 'courseAddedInMyCourses')}`, 'success')
 }
 
+function previewCreatorDraft() {
+  const snapshot = buildDraftSnapshot()
+  previewCourse.value = { ...draftToCourseSummary(snapshot), syncStatus: 'downloaded' }
+  selectPracticeCourse(previewCourse.value.id)
+  switchView('map')
+}
+
 function exportCourse() {
   const payload = courseExportPayload()
   downloadJson(`${payload.id}.json`, payload)
@@ -2033,8 +2125,42 @@ function addWord() {
   if (!selectedCreatorLesson.value) return
   const term = newWord.value.trim()
   if (!term || selectedCreatorLesson.value.words.some(word => word.term === term)) return
-  selectedCreatorLesson.value.words = [...selectedCreatorLesson.value.words, { id: `word-${Date.now()}`, term, example: '' }]
+  selectedCreatorLesson.value.words = [...selectedCreatorLesson.value.words, { id: `word-${Date.now()}`, term, reading: '', meaning: '', partOfSpeech: '', example: '', note: '' }]
   newWord.value = ''
+}
+
+function reviewItemsForAttempt(kind: ReviewKind, itemId: string, prompt: string, correct: boolean) {
+  const courseId = selectedCourse.value?.id || activeCourse.value?.id || 'local-course'
+  return recordReviewAttempt(profile.value.reviewItems || [], {
+    id: reviewKey(kind, courseId, itemId),
+    courseId,
+    kind,
+    prompt,
+    correct
+  })
+}
+
+async function saveReviewAttempt(kind: ReviewKind, itemId: string, prompt: string, correct: boolean) {
+  profile.value = await database.saveProfile(profileWithBadges({
+    ...profile.value,
+    reviewItems: reviewItemsForAttempt(kind, itemId, prompt, correct)
+  }, courses.value))
+}
+
+function selectDueVocabularyItem() {
+  const courseId = activeCourse.value?.id || selectedCourse.value?.id
+  const due = nextDueReviewItem(profile.value.reviewItems || [], 'vocabulary', courseId)
+  if (!due) return
+  const index = vocabularyItems.value.findIndex(item => reviewKey('vocabulary', due.courseId, item.id) === due.id)
+  if (index >= 0) vocabularyIndex.value = index
+}
+
+function selectDueCharacterItem() {
+  const courseId = activeCourse.value?.id || selectedCourse.value?.id
+  const due = nextDueReviewItem(profile.value.reviewItems || [], 'character', courseId)
+  if (!due) return
+  const index = characterPrompts.value.findIndex(prompt => reviewKey('character', due.courseId, prompt.character) === due.id)
+  if (index >= 0) characterPromptIndex.value = index
 }
 
 function removeWord(id: string) {
@@ -2056,8 +2182,7 @@ function removeChip(chip: string) {
 }
 
 function addChipToExercise(exercise: CreatorExercise) {
-  const chip = window.prompt('Add answer chip')?.trim()
-  if (!chip) return
+  const chip = `${t('option')} ${exercise.chips.length + 1}`
   exercise.chips = Array.from(new Set([...exercise.chips, chip]))
   if (exercise.type === 'sentence-order') exercise.orderItems = Array.from(new Set([...exercise.orderItems, chip]))
 }
@@ -2082,9 +2207,22 @@ function setExerciseCorrectAnswer(exercise: CreatorExercise, answer: string) {
 }
 
 function addExerciseAnswerOption(exercise: CreatorExercise) {
-  const option = window.prompt('Add answer option')?.trim()
-  if (!option) return
+  const option = `${t('option')} ${exerciseAnswerOptions(exercise).length + 1}`
   exercise.chips = Array.from(new Set([...exerciseAnswerOptions(exercise), option]))
+}
+
+function updateExerciseAnswerOption(exercise: CreatorExercise, oldOption: string, nextOption: string) {
+  const option = nextOption.trim()
+  if (!option) return
+  exercise.chips = Array.from(new Set(exerciseAnswerOptions(exercise).map(item => item === oldOption ? option : item).filter(Boolean)))
+  if (exercise.answer === oldOption) exercise.answer = option
+  if (!exercise.chips.includes(exercise.answer)) exercise.answer = exercise.chips[0] || 'answer'
+}
+
+function removeExerciseAnswerOption(exercise: CreatorExercise, option: string) {
+  if (exerciseAnswerOptions(exercise).length <= 1) return
+  exercise.chips = exerciseAnswerOptions(exercise).filter(item => item !== option)
+  if (exercise.answer === option) exercise.answer = exercise.chips[0] || 'answer'
 }
 
 function setOrderItemsFromInput(exercise: CreatorExercise, value: string) {
@@ -2118,9 +2256,22 @@ function setDialogueLineCorrectAnswer(line: DialogueLine, answer: string) {
 }
 
 function addDialogueLineOption(line: DialogueLine) {
-  const option = window.prompt('Add answer option')?.trim()
-  if (!option) return
+  const option = `${t('option')} ${dialogueLineOptions(line).length + 1}`
   line.answerOptions = Array.from(new Set([...dialogueLineOptions(line), option]))
+}
+
+function updateDialogueLineOption(line: DialogueLine, oldOption: string, nextOption: string) {
+  const option = nextOption.trim()
+  if (!option) return
+  line.answerOptions = Array.from(new Set(dialogueLineOptions(line).map(item => item === oldOption ? option : item).filter(Boolean)))
+  if ((line.correctAnswer || line.text) === oldOption) line.correctAnswer = option
+  if (!line.answerOptions.includes(line.correctAnswer || line.text)) line.correctAnswer = line.answerOptions[0] || line.text
+}
+
+function removeDialogueLineOption(line: DialogueLine, option: string) {
+  if (dialogueLineOptions(line).length <= 1) return
+  line.answerOptions = dialogueLineOptions(line).filter(item => item !== option)
+  if ((line.correctAnswer || line.text) === option) line.correctAnswer = line.answerOptions[0] || line.text
 }
 
 function createDialogueLine(speaker: string, text: string, translation = ''): DialogueLine {
@@ -2150,7 +2301,9 @@ async function awardPracticeXp(amount: number, label: string, origin?: XpOrigin)
 
 async function awardVocabularyXp(origin?: XpOrigin) {
   const stats = normalizePracticeStats(profile.value.practiceStats)
+  const item = activeVocabularyItem.value
   await saveXpGain(5, t('vocabulary'), {
+    reviewItems: item ? reviewItemsForAttempt('vocabulary', item.id, item.term, true) : profile.value.reviewItems,
     practiceStats: {
       ...stats,
       vocabularyCorrect: stats.vocabularyCorrect + 1
@@ -2160,7 +2313,9 @@ async function awardVocabularyXp(origin?: XpOrigin) {
 
 async function awardCharacterXp(origin?: XpOrigin) {
   const stats = normalizePracticeStats(profile.value.practiceStats)
+  const prompt = activeCharacterPrompt.value
   await saveXpGain(5, t('characters'), {
+    reviewItems: prompt ? reviewItemsForAttempt('character', prompt.character, prompt.character, true) : profile.value.reviewItems,
     practiceStats: {
       ...stats,
       characterCorrect: stats.characterCorrect + 1
@@ -2324,6 +2479,7 @@ function checkLessonAnswer() {
     return
   }
   lessonState.value = answer === currentExercise.value.correctAnswer ? 'correct' : 'incorrect'
+  void saveReviewAttempt('lesson', currentExercise.value.id, currentExercise.value.prompt, lessonState.value === 'correct')
   if (lessonState.value === 'correct') showToast(t('correct'), 'success')
 }
 
@@ -2332,6 +2488,7 @@ function checkVocabularyAnswer(answer = selectedVocabularyAnswer.value, origin?:
   selectedVocabularyAnswer.value = answer
   vocabularyFeedback.value = answer === activeVocabularyItem.value?.meaning ? 'correct' : 'incorrect'
   if (vocabularyFeedback.value === 'correct') void awardVocabularyXp(origin)
+  else if (activeVocabularyItem.value) void saveReviewAttempt('vocabulary', activeVocabularyItem.value.id, activeVocabularyItem.value.term, false)
 }
 
 function nextPracticeIndex(currentIndex: number, length: number, randomize: boolean) {
@@ -2460,6 +2617,7 @@ function checkCharacterAnswer(answer = selectedCharacterAnswer.value, event?: Mo
     }, 650)
   }
   else {
+    void saveReviewAttempt('character', activeCharacterPrompt.value?.character || 'character', activeCharacterPrompt.value?.character || 'character', false)
     showToast(`${t('tryAgainCharacterReading')} ${activeCharacterPrompt.value?.character || 'き'} ${t('isReadAs')} ${correctAnswer}.`, 'warning')
   }
 }
@@ -2771,6 +2929,10 @@ function openProfile() {
           <h2>{{ t('dailyGoal') }}</h2>
           <p class="muted">{{ profile.dailyXp }} {{ t('of') }} {{ profile.dailyGoal }} {{ t('xpEarnedToday') }}</p>
           <div class="progress-track"><div class="progress-fill" :style="{ width: `${dailyProgress}%` }" /></div>
+          <div class="action-row" style="margin-top: 1rem; justify-content: space-between;">
+            <span class="status-pill"><Icon name="material-symbols:history" /> {{ dueReviews.length }} {{ t('reviewDue') }}</span>
+            <button v-if="dueReview" class="secondary-button compact-button" @click="openCourse(activeCourses.find(course => course.id === dueReview?.courseId) || activeCourses[0], dueReview.kind === 'character' ? 'characters' : dueReview.kind === 'vocabulary' ? 'vocabulary' : 'map')">{{ t('dueReview') }}</button>
+          </div>
         </section>
 
         <section class="panel card">
@@ -3060,7 +3222,7 @@ function openProfile() {
               </button>
               <Transition name="soft-appear">
                 <p v-if="vocabularyFeedback !== 'idle'" :class="['feedback-text', vocabularyFeedback]">
-                  {{ vocabularyFeedback === 'correct' ? t('correct') : `${t('notQuite')} ${activeVocabularyItem.term} means ${activeVocabularyItem.meaning}.` }}
+                  {{ vocabularyFeedbackMessage }}
                 </p>
               </Transition>
             </article>
@@ -3173,7 +3335,7 @@ function openProfile() {
             </div>
             <div class="creator-action-bar">
               <button class="primary-button" @click="addCreatorDraftToCourses"><Icon name="material-symbols:playlist-add" /> {{ isCreatorDraftAdded ? t('updateMyCourse') : t('addToMyCourses') }}</button>
-              <button class="secondary-button" :disabled="!isCreatorDraftAdded" @click="openCourse(courses.find(course => course.id === creatorDraft.id) || draftToCourseSummary(buildDraftSnapshot()), 'map')"><Icon name="material-symbols:route" /> {{ t('testPlay') }}</button>
+              <button class="secondary-button" @click="previewCreatorDraft"><Icon name="material-symbols:route" /> {{ t('previewDraft') }}</button>
               <button class="secondary-button" @click="showJsonView = !showJsonView"><Icon name="material-symbols:data-object" /> {{ t('jsonView') }}</button>
               <button class="secondary-button" @click="saveDraft">{{ t('saveDraft') }}</button>
               <label class="secondary-button file-button">
@@ -3214,7 +3376,11 @@ function openProfile() {
               <div class="vocab-entry-list">
                 <article v-for="word in selectedCreatorLesson.words" :key="word.id" class="vocab-entry-row">
                   <label><span class="eyebrow">{{ t('word') }}</span><input v-model="word.term" class="input cjk" /></label>
+                  <label><span class="eyebrow">{{ t('alternativeReading') }}</span><input v-model="word.reading" class="input cjk" :placeholder="t('readingPlaceholder')" /></label>
+                  <label><span class="eyebrow">{{ t('meaning') }}</span><input v-model="word.meaning" class="input" /></label>
+                  <label><span class="eyebrow">{{ t('partOfSpeech') }}</span><input v-model="word.partOfSpeech" class="input" /></label>
                   <label><span class="eyebrow">{{ t('exampleSentence') }}</span><input v-model="word.example" class="input cjk" /></label>
+                  <label><span class="eyebrow">{{ t('usageNote') }}</span><input v-model="word.note" class="input" /></label>
                   <button class="ghost-button danger-button compact-button" :aria-label="`${t('remove')} ${word.term}`" @click="removeWord(word.id)"><Icon name="material-symbols:delete" /></button>
                 </article>
                 <div class="inline-form">
@@ -3257,15 +3423,12 @@ function openProfile() {
                       <strong class="cjk" style="font-size: 1.5rem;">{{ character }}</strong>
                       <span class="status-pill">{{ characterPromptFor(selectedCreatorCharacterTable, character).correctAnswer }}</span>
                     </div>
-                    <label>
-                      <span class="eyebrow">{{ t('answerOptions') }}</span>
-                      <input class="input" :value="characterPromptFor(selectedCreatorCharacterTable, character).answers.join(' | ')" @input="setCharacterPromptOptions(characterPromptFor(selectedCreatorCharacterTable, character), ($event.target as HTMLInputElement).value)" />
-                    </label>
                     <div class="dialogue-correct-options">
                       <span class="eyebrow">{{ t('correctAnswer') }}</span>
-                      <label v-for="answer in characterPromptFor(selectedCreatorCharacterTable, character).answers" :key="answer" class="dialogue-correct-option">
+                      <label v-for="answer in characterPromptFor(selectedCreatorCharacterTable, character).answers" :key="answer" class="dialogue-correct-option option-edit-row">
                         <input type="radio" :name="`${selectedCreatorCharacterTable.id}-${character}-correct`" :checked="characterPromptFor(selectedCreatorCharacterTable, character).correctAnswer === answer" @change="setCharacterPromptCorrectAnswer(characterPromptFor(selectedCreatorCharacterTable, character), answer)" />
-                        <span>{{ answer }}</span>
+                        <input class="input" :value="answer" @input="updateCharacterPromptOption(characterPromptFor(selectedCreatorCharacterTable, character), answer, ($event.target as HTMLInputElement).value)" />
+                        <button class="ghost-button danger-button compact-button" @click.prevent="removeCharacterPromptOption(characterPromptFor(selectedCreatorCharacterTable, character), answer)"><Icon name="material-symbols:delete" /></button>
                       </label>
                     </div>
                     <button class="ghost-button" @click="addCharacterPromptOption(characterPromptFor(selectedCreatorCharacterTable, character))"><Icon name="material-symbols:add" /> {{ t('option') }}</button>
@@ -3347,12 +3510,12 @@ function openProfile() {
                 <div v-if="selectedCreatorExercise.type !== 'learn' && selectedCreatorExercise.type !== 'sentence-order'" class="dialogue-answer-editor-list">
                   <p class="eyebrow">{{ t('answerOptions') }}</p>
                   <article class="dialogue-answer-editor">
-                    <label><span class="eyebrow">{{ t('answerOptions') }}</span><input :value="exerciseAnswerOptions(selectedCreatorExercise).join(' | ')" class="input cjk" :placeholder="t('chunksPlaceholder')" @input="setExerciseAnswerOptions(selectedCreatorExercise, ($event.target as HTMLInputElement).value)" /></label>
                     <div class="dialogue-correct-options">
                       <span class="eyebrow">{{ t('correctAnswer') }}</span>
-                      <label v-for="option in exerciseAnswerOptions(selectedCreatorExercise)" :key="option" class="dialogue-correct-option cjk">
+                      <label v-for="option in exerciseAnswerOptions(selectedCreatorExercise)" :key="option" class="dialogue-correct-option cjk option-edit-row">
                         <input type="radio" :name="`${selectedCreatorExercise.id}-correct`" :checked="selectedCreatorExercise.answer === option" @change="setExerciseCorrectAnswer(selectedCreatorExercise, option)" />
-                        <span>{{ option }}</span>
+                        <input class="input cjk" :value="option" @input="updateExerciseAnswerOption(selectedCreatorExercise, option, ($event.target as HTMLInputElement).value)" />
+                        <button class="ghost-button danger-button compact-button" @click.prevent="removeExerciseAnswerOption(selectedCreatorExercise, option)"><Icon name="material-symbols:delete" /></button>
                       </label>
                     </div>
                     <button class="secondary-button compact-button" @click="addExerciseAnswerOption(selectedCreatorExercise)"><Icon name="material-symbols:add" /> {{ t('option') }}</button>
@@ -3412,12 +3575,12 @@ function openProfile() {
                   <p class="eyebrow">{{ t('answerOptions') }}</p>
                   <article v-for="line in selectedCreatorDialogue.lines.filter(item => item.speaker === selectedCreatorDialogue.learnerRole)" :key="`${selectedCreatorDialogue.id}-${line.speaker}-${line.text}`" class="dialogue-answer-editor">
                     <strong class="cjk">{{ line.text }}</strong>
-                    <label><span class="eyebrow">{{ t('answerOptions') }}</span><input :value="dialogueLineOptions(line).join(' | ')" class="input cjk" :placeholder="t('chunksPlaceholder')" @input="setDialogueLineOptions(line, ($event.target as HTMLInputElement).value)" /></label>
                     <div class="dialogue-correct-options">
                       <span class="eyebrow">{{ t('correctAnswer') }}</span>
-                      <label v-for="option in dialogueLineOptions(line)" :key="option" class="dialogue-correct-option cjk">
+                      <label v-for="option in dialogueLineOptions(line)" :key="option" class="dialogue-correct-option cjk option-edit-row">
                         <input type="radio" :name="`${selectedCreatorDialogue.id}-${line.text}-correct`" :checked="(line.correctAnswer || line.text) === option" @change="setDialogueLineCorrectAnswer(line, option)" />
-                        <span>{{ option }}</span>
+                        <input class="input cjk" :value="option" @input="updateDialogueLineOption(line, option, ($event.target as HTMLInputElement).value)" />
+                        <button class="ghost-button danger-button compact-button" @click.prevent="removeDialogueLineOption(line, option)"><Icon name="material-symbols:delete" /></button>
                       </label>
                     </div>
                     <button class="secondary-button compact-button" @click="addDialogueLineOption(line)"><Icon name="material-symbols:add" /> {{ t('option') }}</button>

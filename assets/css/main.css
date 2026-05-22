@@ -10,6 +10,8 @@
   --zs-primary: #4c6fff;
   --zs-primary-hover: #3658e5;
   --zs-primary-soft: #eef2ff;
+  --zs-secondary: #0f9f7a;
+  --zs-secondary-soft: #e7f7f2;
   --zs-progress: #4c6fff;
   --zs-progress-soft: #eef2ff;
   --zs-warning: #4c6fff;
@@ -1044,6 +1046,15 @@ h2 .iconify svg,
   background: var(--zs-primary-soft);
 }
 
+.option-edit-row {
+  align-items: center;
+}
+
+.option-edit-row .input {
+  min-height: 2.45rem;
+  padding: 0.45rem 0.65rem;
+}
+
 .blank {
   display: inline-block;
   width: 4.5rem;
@@ -1488,7 +1499,7 @@ h2 .iconify svg,
 }
 .vocab-entry-row {
   display: grid;
-  grid-template-columns: minmax(8rem, 0.75fr) minmax(12rem, 1.25fr) auto;
+  grid-template-columns: repeat(2, minmax(10rem, 1fr)) auto;
   gap: 0.65rem;
   align-items: end;
   padding: 0.75rem;
@@ -1499,6 +1510,11 @@ h2 .iconify svg,
 .vocab-entry-row label {
   display: grid;
   gap: 0.35rem;
+}
+
+.vocab-entry-row .danger-button {
+  grid-column: 1 / -1;
+  justify-self: start;
 }
 
 .type-specific-editor {

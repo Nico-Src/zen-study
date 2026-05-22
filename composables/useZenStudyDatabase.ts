@@ -1,3 +1,5 @@
+import type { ReviewItem } from '../utils/reviewEngine'
+
 export type CourseSummary = {
   id: string
   repositoryId: string
@@ -32,7 +34,7 @@ export type CreatorDraft = {
   version: string
   lessons: number
   exercises: number
-  words: string[]
+  words: unknown[]
   lessonData?: unknown[]
   characterTables?: unknown[]
   validationIssues: string[]
@@ -49,6 +51,7 @@ export type Profile = {
   dailyGoal: number
   dailyXp: number
   badges: string[]
+  reviewItems?: ReviewItem[]
   practiceStats?: {
     coursesAdded: number
     lessonsCompleted: number
@@ -140,12 +143,13 @@ async function deleteOne(storeName: StoreName, id: string) {
 export function useZenStudyDatabase() {
   const defaultProfile: Profile = {
     id: 'profile',
-    xp: 2500,
-    level: 12,
-    streak: 12,
+    xp: 0,
+    level: 1,
+    streak: 0,
     dailyGoal: 60,
-    dailyXp: 38,
+    dailyXp: 0,
     badges: [],
+    reviewItems: [],
     practiceStats: {
       coursesAdded: 0,
       lessonsCompleted: 0,
